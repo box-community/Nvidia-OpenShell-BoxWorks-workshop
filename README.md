@@ -1083,7 +1083,7 @@ Box Mount isn't in this repo. Get the build from your workshop host and put its 
 | Keyword routing + answer quoted from the best chunk | Nemotron 3.5 Super choosing tools and writing a cited answer (Step 11) |
 | Agent acting directly on files | The agent's file actions run inside OpenShell, with Box Mount and a network policy (Steps 13 to 16) |
 
-## If something goes wrong
+## Troubleshooting
 
 - **`No module named 'akf_workshop'`**: you're not in the repo folder, or `PYTHONPATH=src` is missing.
 - **`mode: OFFLINE` when you expected remote**: both `NVIDIA_API_KEY` and `NVIDIA_USE_REMOTE=1` must be set in the *same terminal*.
