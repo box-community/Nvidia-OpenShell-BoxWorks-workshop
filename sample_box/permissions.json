@@ -1,0 +1,16 @@
+{
+  "default_acl": {
+    "users": [],
+    "groups": ["workshop-attendees"]
+  },
+  "overrides": {
+    "docs/enterprise-support-policy.md": {
+      "users": ["support-lead@example.com"],
+      "groups": ["support-leads"]
+    },
+    "data/support_cases.csv": {
+      "users": ["support-lead@example.com"],
+      "groups": ["support-leads"]
+    }
+  }
+}

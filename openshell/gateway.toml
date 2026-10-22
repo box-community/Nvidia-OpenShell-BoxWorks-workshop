@@ -1,0 +1,11 @@
+# OpenShell gateway settings for the workshop: run agent environments as MicroVMs on macOS.
+# Copy to ~/.config/openshell/gateway.toml, then: brew services restart openshell
+[openshell]
+version = 2
+
+[openshell.gateway]
+compute_driver = "vm"   # opt-in; the gateway never picks the MicroVM driver on its own
+
+[openshell.drivers.vm]
+vcpus = 2
+mem_mib = 4096

@@ -1,0 +1,30 @@
+[
+  {
+    "question": "How should the workshop evaluate retrieval quality?",
+    "user": "dev@example.com",
+    "groups": ["workshop-attendees"],
+    "expected_files": ["box-ai-retrieval.md"],
+    "expect_status": "ok"
+  },
+  {
+    "question": "When should enterprise incidents be escalated?",
+    "user": "dev@example.com",
+    "groups": ["workshop-attendees"],
+    "expected_files": [],
+    "expect_status": "insufficient_context"
+  },
+  {
+    "question": "When should enterprise incidents be escalated?",
+    "user": "support-lead@example.com",
+    "groups": ["support-leads"],
+    "expected_files": ["enterprise-support-policy.md"],
+    "expect_status": "ok"
+  },
+  {
+    "question": "Predict support risk and cite the policy.",
+    "user": "support-lead@example.com",
+    "groups": ["support-leads"],
+    "expected_files": ["enterprise-support-policy.md", "supply-chain-risk-playbook.md"],
+    "expect_status": "ok"
+  }
+]

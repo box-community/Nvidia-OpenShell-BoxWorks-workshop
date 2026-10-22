@@ -1,0 +1,29 @@
+# OpenShell provider profile for Box Mount.
+# The Box token is held by OpenShell and injected only into inspected requests that
+# /sandbox/box-mount makes to the Box API. Programs inside the sandbox see a placeholder.
+id: box-mount
+display_name: Box Mount
+description: Short-lived Box token injected only into Box API requests from Box Mount.
+category: data
+inference_capable: false
+credentials:
+  - name: access_token
+    env_vars: [BOX_ACCESS_TOKEN]
+    required: true
+    auth_style: bearer
+    header_name: authorization
+discovery:
+  credentials: [access_token]
+endpoints:
+  - host: api.box.com
+    port: 443
+    protocol: rest
+    enforcement: enforce
+    access: read-write
+  - host: upload.box.com
+    port: 443
+    protocol: rest
+    enforcement: enforce
+    access: read-write
+binaries:
+  - /sandbox/box-mount

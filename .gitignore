@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.env
+.DS_Store
+.akf_cache/
+boxes*.png
+my_questions.json
+# Box Mount is a private build: get it from Box, do not commit it
+Box Mount Build */
+*.tar.gz

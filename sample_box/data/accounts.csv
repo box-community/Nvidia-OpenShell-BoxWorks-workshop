@@ -1,0 +1,5 @@
+account_id,account_name,tier,renewal_days,region
+100,Acme Motors,enterprise,21,NA
+101,Beacon Health,enterprise,8,NA
+102,Cobalt Retail,business,45,EMEA
+103,Delta Finance,enterprise,14,APAC

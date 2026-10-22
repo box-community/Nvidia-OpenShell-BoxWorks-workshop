@@ -1,0 +1,13 @@
+<x_0.2188><y_0.1492>Enterprise Support Policy<x_0.4951><y_0.168><class_Section-header>
+
+<x_0.2178><y_0.1836>This document is restricted to support leads.<x_0.5039><y_0.1953><class_Text>
+
+<x_0.2188><y_0.2109>Escalation<x_0.3115><y_0.225><class_Section-header>
+
+<x_0.2188><y_0.2328>Enterprise incidents with customer impact should be escalated to the support lead within 30 minutes.<x_0.7432><y_0.2578><class_Text>
+
+<x_0.2188><y_0.2719>If a customer has more than three open priority cases or an unresolved case older than 14 days, the account should be marked as elevated risk for the weekly support review.<x_0.7764><y_0.2984><class_Text>
+
+<x_0.2188><y_0.318>Response Targets<x_0.3809><y_0.3328><class_Section-header>
+
+<x_0.2188><y_0.3406>Priority 1 cases require an initial response within 15 minutes.<br> Priority 2 cases require an initial response within 2 hours.<br> Priority 3 cases require an initial response within 1 business day.<x_0.6348><y_0.3812><class_Text>

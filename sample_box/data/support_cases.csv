@@ -1,0 +1,11 @@
+case_id,account_id,priority,status,age_days
+1,100,P2,open,4
+2,100,P3,closed,2
+3,101,P1,open,16
+4,101,P2,open,9
+5,101,P2,open,5
+6,102,P3,open,3
+7,103,P1,open,18
+8,103,P2,open,17
+9,103,P3,open,12
+10,103,P2,closed,2

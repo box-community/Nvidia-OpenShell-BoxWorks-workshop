@@ -1,0 +1,110 @@
+[
+  {
+    "question": "When should enterprise incidents be escalated?",
+    "user": "support-lead@example.com",
+    "groups": [
+      "support-leads"
+    ],
+    "expected_files": [
+      "enterprise-support-policy.md"
+    ],
+    "expect_status": "ok"
+  },
+  {
+    "question": "How quickly must we escalate an incident that affects a customer?",
+    "user": "support-lead@example.com",
+    "groups": [
+      "support-leads"
+    ],
+    "expected_files": [
+      "enterprise-support-policy.md"
+    ],
+    "expect_status": "ok"
+  },
+  {
+    "question": "What is the response target for a P1 case?",
+    "user": "support-lead@example.com",
+    "groups": [
+      "support-leads"
+    ],
+    "expected_files": [
+      "enterprise-support-policy.md"
+    ],
+    "expect_status": "ok"
+  },
+  {
+    "question": "How fast must a priority one ticket get a first reply?",
+    "user": "support-lead@example.com",
+    "groups": [
+      "support-leads"
+    ],
+    "expected_files": [
+      "enterprise-support-policy.md"
+    ],
+    "expect_status": "ok"
+  },
+  {
+    "question": "What signals does the playbook list for support intervention?",
+    "user": "dev@example.com",
+    "groups": [
+      "workshop-attendees"
+    ],
+    "expected_files": [
+      "supply-chain-risk-playbook.md"
+    ],
+    "expect_status": "ok"
+  },
+  {
+    "question": "Which account attributes does the model look at?",
+    "user": "dev@example.com",
+    "groups": [
+      "workshop-attendees"
+    ],
+    "expected_files": [
+      "supply-chain-risk-playbook.md"
+    ],
+    "expect_status": "ok"
+  },
+  {
+    "question": "What must every answer include?",
+    "user": "dev@example.com",
+    "groups": [
+      "workshop-attendees"
+    ],
+    "expected_files": [
+      "box-ai-retrieval.md"
+    ],
+    "expect_status": "ok"
+  },
+  {
+    "question": "How big should chunks be?",
+    "user": "dev@example.com",
+    "groups": [
+      "workshop-attendees"
+    ],
+    "expected_files": [
+      "box-ai-retrieval.md"
+    ],
+    "expect_status": "ok"
+  },
+  {
+    "question": "What is Beacon Health's renewal date?",
+    "user": "dev@example.com",
+    "groups": [
+      "workshop-attendees"
+    ],
+    "expected_files": [
+      "accounts.csv"
+    ],
+    "expect_status": "ok"
+  },
+  {
+    "question": "What is the warranty on the HX-9000 curing light?",
+    "user": "dev@example.com",
+    "groups": [
+      "workshop-attendees"
+    ],
+    "expected_files": [],
+    "expect_status": "insufficient_context"
+  }
+]

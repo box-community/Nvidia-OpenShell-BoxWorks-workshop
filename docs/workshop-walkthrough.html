@@ -1,0 +1,954 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Context-Aware Agents Walkthrough</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a sticky stage rail on the left (the pipeline you walk through), one reading column on the right.
+   Each step = concept, command, what to look for, real output. */
+/* NVIDIA palette: green #76B900 on black, white and greys. Brand green is for fills and borders;
+   --accent is a darker green that stays readable as text on white. Box items use neutral charcoal. */
+:root {
+  --bg: #f4f4f4;
+  --surface: #ffffff;
+  --ink: #111111;
+  --muted: #5c5c5c;
+  --line: #dcdcdc;
+  --accent: #4b7900;       /* NVIDIA green, darkened for text on light */
+  --accent-soft: #eef5df;
+  --nv: #76b900;           /* NVIDIA green */
+  --on-nv: #000000;
+  --nv-soft: #eef5df;
+  --box: #1f1f1f;          /* Box items: neutral */
+  --box-soft: #ebebeb;
+  --code-bg: #111111;
+  --code-ink: #ececec;
+  --code-dim: #9a9a9a;
+  --warn: #8a5300;
+  --warn-soft: #fff3df;
+  --font-display: "Bricolage Grotesque", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --step: 1rem;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #000000; --surface: #121212; --ink: #f2f2f2; --muted: #a6a6a6; --line: #2c2c2c;
+    --accent: #76b900; --accent-soft: #1b2805; --nv: #76b900; --on-nv: #000000; --nv-soft: #1b2805;
+    --box: #f2f2f2; --box-soft: #222222;
+    --code-bg: #0a0a0a; --code-ink: #ececec; --code-dim: #8c8c8c; --warn: #f0b456; --warn-soft: #2a2010;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #000000; --surface: #121212; --ink: #f2f2f2; --muted: #a6a6a6; --line: #2c2c2c;
+  --accent: #76b900; --accent-soft: #1b2805; --nv: #76b900; --on-nv: #000000; --nv-soft: #1b2805;
+  --box: #f2f2f2; --box-soft: #222222;
+  --code-bg: #0a0a0a; --code-ink: #ececec; --code-dim: #8c8c8c; --warn: #f0b456; --warn-soft: #2a2010;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font: 400 17px/1.6 var(--font-body);
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+a { color: var(--accent); }
+a:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--nv); outline-offset: 2px; border-radius: 4px; }
+.page { max-width: 1180px; margin: 0 auto; display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 48px; padding-block: 40px 80px; }
+
+/* Rail */
+.rail { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 24px); align-self: start; max-height: calc(100vh - 48px); overflow-y: auto; }
+.rail h2 { font: 700 12px/1 var(--font-body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); margin: 0 0 12px; }
+.rail ol { list-style: none; margin: 0; padding: 0; display: grid; gap: 2px; }
+.rail a { display: grid; grid-template-columns: 28px 1fr; gap: 8px; align-items: center; padding: 6px 8px; border-radius: 8px; color: var(--ink); text-decoration: none; font-size: 15px; line-height: 1.3; }
+.rail a:hover { background: var(--accent-soft); }
+.rail .n { font: 600 12px/1 var(--font-mono); color: var(--muted); width: 24px; height: 24px; border-radius: 50%; border: 1.5px solid var(--line); display: grid; place-items: center; }
+.rail li.done .n { background: var(--nv); border-color: var(--nv); color: var(--on-nv); }
+.rail .phase { font: 700 11px/1 var(--font-body); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 14px 8px 4px; }
+.progress { margin-top: 16px; font-size: 13px; color: var(--muted); }
+.bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; margin-top: 6px; }
+.bar span { display: block; height: 100%; width: 0; background: var(--nv); transition: width .3s; }
+
+/* Header */
+header.intro { display: grid; gap: 16px; margin-bottom: 40px; border-top: 6px solid var(--nv); padding-top: 24px; }
+.kicker { font: 700 13px/1 var(--font-body); letter-spacing: .14em; text-transform: uppercase; color: var(--accent); }
+h1 { font: 800 clamp(2rem, 4.6vw, 3.2rem)/1.05 var(--font-display); margin: 0; letter-spacing: -.02em; text-wrap: balance; }
+.lede { font-size: 1.15rem; color: var(--muted); max-width: 62ch; margin: 0; }
+.legend { display: flex; flex-wrap: wrap; gap: 10px; }
+.tag { display: inline-flex; align-items: center; gap: 6px; font: 600 12.5px/1 var(--font-body); padding: 6px 10px; border-radius: 999px; }
+.tag.box { background: var(--box-soft); color: var(--box); border: 1px solid var(--line); }
+.tag.nv { background: var(--nv); color: var(--on-nv); }
+.tag.local { background: var(--surface); color: var(--muted); border: 1px solid var(--line); }
+
+/* Pipeline strip */
+.pipeline { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font: 600 13px/1 var(--font-mono); margin-top: 4px; }
+.pipeline span { padding: 8px 10px; border-radius: 6px; background: var(--surface); border: 1px solid var(--line); }
+.pipeline span.b { border-color: var(--box); color: var(--box); }
+.pipeline span.g { border-color: var(--nv); background: var(--nv); color: var(--on-nv); }
+.pipeline i { color: var(--muted); font-style: normal; }
+
+/* Steps */
+main { min-width: 0; }
+section.step { border-top: 1px solid var(--line); padding-block: 40px; display: grid; gap: 18px; }
+.step-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 12px 16px; }
+.step-no { font: 600 14px/1 var(--font-mono); color: var(--accent); }
+h2.title { font: 800 1.75rem/1.15 var(--font-display); margin: 0; letter-spacing: -.01em; text-wrap: balance; flex: 1 1 320px; }
+.done-toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); cursor: pointer; user-select: none; }
+.done-toggle input { width: 18px; height: 18px; accent-color: var(--nv); }
+p { margin: 0; max-width: 68ch; }
+.concept { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; display: grid; gap: 8px; max-width: 760px; }
+.concept h3 { margin: 0; font: 700 12px/1 var(--font-body); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.concept dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 14px; }
+.concept dt { font-weight: 700; }
+.concept dd { margin: 0; color: var(--muted); }
+h4 { margin: 6px 0 0; font: 700 15px/1.2 var(--font-body); }
+ul.look { margin: 0; padding-left: 1.2em; display: grid; gap: 6px; max-width: 68ch; }
+.where { font-size: 14px; color: var(--muted); }
+code { font: 500 .88em/1 var(--font-mono); background: var(--box-soft); color: var(--ink); padding: 2px 5px; border-radius: 4px; }
+
+/* Terminal blocks */
+.term { position: relative; background: var(--code-bg); color: var(--code-ink); border-radius: 10px; max-width: 860px; }
+.term .label { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px 0 16px; font: 600 11.5px/1 var(--font-body); letter-spacing: .1em; text-transform: uppercase; color: var(--code-dim); }
+.term pre { margin: 0; padding: 10px 16px 16px; overflow-x: auto; font: 400 14px/1.55 var(--font-mono); }
+.term pre .c { color: var(--code-dim); }
+.term.out { background: var(--surface); color: var(--ink); border: 1px dashed var(--line); }
+.term.out .label { color: var(--muted); }
+.term.out pre { font-size: 13px; }
+.copy { font: 600 12px/1 var(--font-body); color: var(--code-ink); background: transparent; border: 1px solid var(--code-dim); border-radius: 6px; padding: 6px 10px; cursor: pointer; letter-spacing: normal; text-transform: none; }
+.copy:hover { border-color: var(--code-ink); }
+.copy.ok { border-color: var(--nv); color: var(--nv); }
+.term { border-top: 3px solid var(--nv); }
+.term.out { border-top: 1px dashed var(--line); }
+.diagram { margin: 0; max-width: 860px; display: grid; gap: 8px; }
+.diagram img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 10px; background: #f4f6f9; }
+.diagram figcaption { font-size: 14px; color: var(--muted); }
+.note { border-left: 3px solid var(--warn); background: var(--warn-soft); padding: 12px 16px; border-radius: 0 8px 8px 0; max-width: 760px; font-size: 15.5px; }
+.note.g { border-color: var(--nv); background: var(--nv-soft); }
+table { border-collapse: collapse; font-size: 15px; }
+.tablewrap { overflow-x: auto; max-width: 760px; }
+th, td { text-align: left; padding: 8px 14px 8px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+td.num { font-variant-numeric: tabular-nums; font-family: var(--font-mono); font-size: 14px; }
+footer { border-top: 1px solid var(--line); padding-top: 24px; color: var(--muted); font-size: 14px; }
+
+@media (max-width: 900px) {
+  .page { grid-template-columns: minmax(0, 1fr); gap: 24px; padding-block: 24px 60px; }
+  .rail { position: static; max-height: none; border: 1px solid var(--line); border-radius: 12px; padding: 14px; background: var(--surface); }
+  .rail ol { grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); }
+  .rail .phase { grid-column: 1 / -1; }
+}
+@media (max-width: 480px) {
+  .concept dl { grid-template-columns: 1fr; }
+  .concept dd { margin-bottom: 6px; }
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav class="rail" aria-label="Workshop steps">
+  <h2>Walkthrough</h2>
+  <ol id="nav">
+    <li class="phase">Get set up</li>
+    <li data-step="s0"><a href="#s0"><span class="n">0</span>Before you start</a></li>
+    <li data-step="s1"><a href="#s1"><span class="n">1</span>Connect to Box</a></li>
+    <li class="phase">Ingest</li>
+    <li data-step="s2"><a href="#s2"><span class="n">2</span>Files and permissions</a></li>
+    <li data-step="s3"><a href="#s3"><span class="n">3</span>Parse</a></li>
+    <li data-step="s4"><a href="#s4"><span class="n">4</span>Chunk</a></li>
+    <li data-step="s5"><a href="#s5"><span class="n">5</span>Embed</a></li>
+    <li class="phase">Answer a question</li>
+    <li data-step="s6"><a href="#s6"><span class="n">6</span>Vector search</a></li>
+    <li data-step="s7"><a href="#s7"><span class="n">7</span>Rerank</a></li>
+    <li data-step="s8"><a href="#s8"><span class="n">8</span>Answer or refuse</a></li>
+    <li data-step="s9"><a href="#s9"><span class="n">9</span>Same question, two people</a></li>
+    <li class="phase">Agents</li>
+    <li data-step="s10"><a href="#s10"><span class="n">10</span>Predict with Kumo</a></li>
+    <li data-step="s11"><a href="#s11"><span class="n">11</span>A Nemotron agent</a></li>
+    <li data-step="s12"><a href="#s12"><span class="n">12</span>Measure and experiment</a></li>
+    <li class="phase">Agent security</li>
+    <li data-step="s13"><a href="#s13"><span class="n">13</span>Why a secure runtime</a></li>
+    <li data-step="s14"><a href="#s14"><span class="n">14</span>Set up OpenShell and Box Mount</a></li>
+    <li data-step="s15"><a href="#s15"><span class="n">15</span>Let the agent work</a></li>
+    <li data-step="s16"><a href="#s16"><span class="n">16</span>Watch the policy hold</a></li>
+  </ol>
+  <div class="progress"><span id="progress-text">0 of 13 steps done</span><div class="bar"><span id="progress-bar"></span></div></div>
+</nav>
+
+<main>
+<header class="intro">
+  <div class="kicker">Hands-on workshop</div>
+  <h1>Context-Aware Agents with NVIDIA Nemotron</h1>
+  <p class="lede">Build an agent that answers questions from Box content, cites its sources, and only uses files the person asking is allowed to see. You run one stage at a time and see exactly what each one does.</p>
+  <div class="pipeline" aria-label="Pipeline">
+    <span class="b">Box files</span><i>→</i><span class="g">Parse</span><i>→</i><span>Chunk</span><i>→</i><span class="g">Embed</span><i>→</i><span>Search</span><i>→</i><span class="g">Rerank</span><i>→</i><span>Answer</span><i>→</i><span class="g">Agent</span>
+  </div>
+  <div class="legend">
+    <span class="tag box">Box: files, versions, permissions</span>
+    <span class="tag nv">NVIDIA hosted model</span>
+    <span class="tag local">Runs locally in Python</span>
+  </div>
+</header>
+
+<!-- 0 -->
+<section class="step" id="s0">
+  <div class="step-head"><span class="step-no">Step 0</span><h2 class="title">Before you start</h2><label class="done-toggle"><input type="checkbox" id="done-s0" data-step="s0"> Done</label></div>
+  <p>You need Python 3.10 or newer and a copy of the workshop repo. No GPU, and nothing to install for the core steps. Run every command from the repo folder.</p>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>cd boxworks-workshop
+PYTHONPATH=src python3 -m unittest discover -s tests</pre></div>
+  <p>The last line should say <code>OK</code>.</p>
+  <h4>Get your NVIDIA API key</h4>
+  <p>Several steps compare a local stand-in with the real NVIDIA model. To use the real ones, you need a free NVIDIA API key:</p>
+  <div class="tablewrap"><table>
+    <tbody>
+      <tr><td class="num">1</td><td>Go to <a href="https://build.nvidia.com/" target="_blank" rel="noopener">build.nvidia.com</a> and sign in, or create an NVIDIA account if you don't have one.</td></tr>
+      <tr><td class="num">2</td><td>Open any model page and choose <strong>Get API Key</strong>, then generate a key.</td></tr>
+      <tr><td class="num">3</td><td>Copy the key. It starts with <code>nvapi-</code>. Store it somewhere safe, because you may not be able to see it again.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Then set it in the same terminal you run the commands in. Without it, everything still runs offline.</p>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>export NVIDIA_API_KEY="nvapi-..."   <span class="c"># your key from build.nvidia.com</span>
+export NVIDIA_USE_REMOTE=1</pre></div>
+  <div class="note">Keep keys in your terminal only. Don't paste them into chat, documents or code. Every command prints <code>mode: REMOTE</code> or <code>mode: OFFLINE</code> so you always know which models ran.</div>
+</section>
+
+<!-- 1 -->
+<section class="step" id="s1">
+  <div class="step-head"><span class="step-no">Step 1</span><h2 class="title">Connect to Box</h2><label class="done-toggle"><input type="checkbox" id="done-s1" data-step="s1"> Done</label></div>
+  <div class="concept"><h3>Concept</h3>
+    <dl>
+      <dt>Service account</dt><dd>A Box app signs in as its own user, an <code>AutomationUser_…@boxdevedition.com</code> account. The code sees only what that account owns or has been invited to.</dd>
+      <dt>Client Credentials Grant</dt><dd>How the app signs in: a client ID, a client secret and your Box enterprise ID buy a short-lived access token.</dd>
+    </dl>
+  </div>
+  <p>Your workshop host gives you these values, or you create your own Box Platform app (see the README's Setup). Set them in your terminal:</p>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>export BOX_CLIENT_ID="..."
+export BOX_CLIENT_SECRET="..."
+export BOX_ENTERPRISE_ID="..."</pre></div>
+  <p><strong>Using your own Box?</strong> Create the workshop folder once. It uploads five sample files and sets up two Box groups. Skip this if your host already gave you a folder ID.</p>
+  <div class="term"><div class="label">Run once<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.box_source.setup_box</pre></div>
+  <div class="term out"><div class="label">What it creates</div><pre>Context-Aware Agents Workshop/
+  docs/           shared with group workshop-attendees
+  data/           shared with group workshop-attendees
+  support-leads/  shared with group support-leads
+    enterprise-support-policy.md
+    support_cases.csv
+
+Done. Use this folder:
+  export BOX_FOLDER_ID=429759160477</pre></div>
+  <p>Point the workshop at the folder. From now on, every step reads from Box.</p>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>export BOX_FOLDER_ID=429759160477   <span class="c"># or the ID printed for your folder</span></pre></div>
+  <div class="note g">To go back to the local sample files at any point, run <code>unset BOX_FOLDER_ID</code>. Every step works either way.</div>
+</section>
+
+<!-- 2 -->
+<section class="step" id="s2">
+  <div class="step-head"><span class="step-no">Step 2</span><h2 class="title">See the files and who can read them</h2><label class="done-toggle"><input type="checkbox" id="done-s2" data-step="s2"> Done</label></div>
+  <div class="concept"><h3>Concept</h3>
+    <dl>
+      <dt>Collaboration</dt><dd>An invitation to a Box file or folder, for a user or a group. It's how Box decides who can read what.</dd>
+      <dt>Inheritance</dt><dd>Box permissions flow down: anyone invited to a folder can read everything inside it. That's why the two restricted files live in their own <code>support-leads/</code> folder.</dd>
+      <dt>ACL</dt><dd>Access control list: the users and groups allowed to read one file. The code builds it from Box's collaborations and attaches it to the file.</dd>
+    </dl>
+  </div>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.walkthrough files</pre></div>
+  <div class="term out"><div class="label">You'll see (shortened)</div><pre>source: Box folder 429759160477 (live Box API)
+
+box-ai-retrieval.md  (text/markdown)
+   file_id: box-2541404399963   version: v2820326649563   labels: ['docs']
+   allowed: user AutomationUser_…, …, group workshop-attendees  ->  you can see it
+enterprise-support-policy.md  (text/markdown)
+   file_id: box-2541403348737   version: v2820325281537   labels: ['support-leads']
+   allowed: user AutomationUser_…, …, group support-leads  ->  hidden from you</pre></div>
+  <h4>What to look for</h4>
+  <ul class="look">
+    <li><code>source:</code> says <em>live Box API</em>. The IDs and versions are Box's own.</li>
+    <li>You're <code>dev@example.com</code> in the group <code>workshop-attendees</code>. Two files say <em>hidden from you</em>, because only the <code>support-leads</code> group was invited to their folder.</li>
+    <li>The permissions are attached to each file now, and they travel with it through every later step.</li>
+  </ul>
+  <p class="where">Code: <code>src/akf_workshop/box_source/box_api.py</code></p>
+</section>
+
+<!-- 3 -->
+<section class="step" id="s3">
+  <div class="step-head"><span class="step-no">Step 3</span><h2 class="title">Parse files into sections</h2><label class="done-toggle"><input type="checkbox" id="done-s3" data-step="s3"> Done</label></div>
+  <div class="concept"><h3>Concept</h3>
+    <dl>
+      <dt>Section</dt><dd>A heading plus the text under it. Search works on pieces like this, not on whole files.</dd>
+      <dt>Layout model</dt><dd>Text files can be split by their headings. A PDF page or an image is only pixels, so a model has to find the title, paragraphs and tables. That's what <strong>Nemotron Parse</strong> does.</dd>
+    </dl>
+  </div>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.walkthrough parse</pre></div>
+  <p>The 5 files become 11 sections in total. Markdown splits at each <code>#</code> heading, and each CSV becomes one summary:</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>File</th><th>Sections</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td><code>box-ai-retrieval.md</code></td><td class="num">3</td><td>3 headings</td></tr>
+      <tr><td><code>supply-chain-risk-playbook.md</code></td><td class="num">3</td><td>3 headings</td></tr>
+      <tr><td><code>enterprise-support-policy.md</code></td><td class="num">3</td><td>3 headings</td></tr>
+      <tr><td><code>accounts.csv</code></td><td class="num">1</td><td>one summary per CSV</td></tr>
+      <tr><td><code>support_cases.csv</code></td><td class="num">1</td><td>one summary per CSV</td></tr>
+      <tr><td><strong>All files</strong></td><td class="num"><strong>11</strong></td><td></td></tr>
+    </tbody>
+  </table></div>
+  <h4>Now parse an image with Nemotron Parse <span class="tag nv">hosted</span></h4>
+  <p>Needs the API key from Step 0 and two small libraries:</p>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>pip install "pypdfium2>=5" "Pillow>=10"
+PYTHONPATH=src python3 -m akf_workshop.walkthrough parse --file tests/fixtures/response_targets.png</pre></div>
+  <div class="term out"><div class="label">You'll see</div><pre>response_targets.png   [text]   22 words  heading: p1: Support Response Targets
+response_targets.png   [table]  41 words  heading: p1: Support Response Targets
+
+--- [table] p1: Support Response Targets
+| **Priority** | **Initial response** | **Escalate to lead after** |
+|---|---|---|
+| P1 | 15 minutes | 30 minutes |
+| P2 | 2 hours | 4 hours |
+| P3 | 1 business day | 2 business days |</pre></div>
+  <p>See where the model found each part. <code>--show</code> draws its boxes onto a <em>copy</em> of the image:</p>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.walkthrough parse --file tests/fixtures/response_targets.png --show boxes.png
+open boxes.png</pre></div>
+  <ul class="look">
+    <li>The table comes back as a real table, every row and column in place, not a jumble of words.</li>
+    <li>Your original image never changes. The boxes go into <code>boxes.png</code>.</li>
+    <li>If you see a "busy" message, NVIDIA's endpoint had a hiccup. Wait a minute and run it again.</li>
+  </ul>
+</section>
+
+<!-- 4 -->
+<section class="step" id="s4">
+  <div class="step-head"><span class="step-no">Step 4</span><h2 class="title">Cut sections into chunks</h2><label class="done-toggle"><input type="checkbox" id="done-s4" data-step="s4"> Done</label></div>
+  <div class="concept"><h3>Concept</h3>
+    <dl>
+      <dt>Chunk</dt><dd>A piece of at most 120 words. Small pieces make search precise. Each chunk keeps its file, Box version and permissions. A table is never split, so a row is never separated from its header.</dd>
+    </dl>
+  </div>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.walkthrough chunk</pre></div>
+  <div class="term out"><div class="label">You'll see (shortened)</div><pre>box-2541404399963:0001   69 words  box-ai-retrieval.md            Box AI Retrieval Evaluation
+box-2541404399963:0002   48 words  box-ai-retrieval.md            Chunking Guidance
+box-2541403348737:0008   47 words  enterprise-support-policy.md   Escalation
+
+11 sections -> 11 chunks.   <span class="c">(totals across all 5 files)</span></pre></div>
+  <p>Each line is one chunk:</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Part</th><th>Example</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td>Chunk ID</td><td><code>box-2541404399963:0001</code></td><td>The Box file ID, then the chunk's position in the list</td></tr>
+      <tr><td>Length</td><td class="num">69 words</td><td>How long the chunk is. The limit is 120, so this one wasn't split.</td></tr>
+      <tr><td>File</td><td><code>box-ai-retrieval.md</code></td><td>The Box file it came from</td></tr>
+      <tr><td>Heading</td><td>Box AI Retrieval Evaluation</td><td>The section it came from</td></tr>
+    </tbody>
+  </table></div>
+  <ul class="look">
+    <li>In Step 3 the same section was 65 words. Each chunk starts with its section's heading, so it carries that context into search: 65 + 4 heading words = 69.</li>
+    <li>A section longer than 120 words would become several chunks. Every section here is short, which is why 11 sections give 11 chunks.</li>
+    <li>A chunk ID is the Box file ID plus a position. Answers cite these IDs later.</li>
+    <li>Restricted chunks are in the list too. Permissions are checked when someone searches, not here.</li>
+  </ul>
+</section>
+
+<!-- 5 -->
+<section class="step" id="s5">
+  <div class="step-head"><span class="step-no">Step 5</span><h2 class="title">Turn text into vectors</h2><label class="done-toggle"><input type="checkbox" id="done-s5" data-step="s5"> Done</label></div>
+  <div class="concept"><h3>Concept</h3>
+    <dl>
+      <dt>Embedding</dt><dd>A list of numbers (a vector) that captures what a piece of text means. Texts with similar meanings get similar vectors.</dd>
+      <dt>Cosine similarity</dt><dd>How close two vectors point: 1.0 is the same direction, near 0 is unrelated.</dd>
+      <dt>Model</dt><dd><strong>Nemotron 3 Embed 1B</strong> (<code>nvidia/nemotron-3-embed-1b</code>), hosted by NVIDIA. Offline, a simple word-hashing stand-in is used.</dd>
+    </dl>
+  </div>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.walkthrough embed</pre></div>
+  <p>It compares three sentences. 1 and 2 mean the same thing in different words, and 3 is unrelated:</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Pair</th><th>Offline (word hashing)</th><th>Nemotron Embed</th></tr></thead>
+    <tbody>
+      <tr><td>1 vs 2, same meaning</td><td class="num">+0.18</td><td class="num"><strong>+0.59</strong></td></tr>
+      <tr><td>1 vs 3, unrelated</td><td class="num">−0.14</td><td class="num">+0.06</td></tr>
+      <tr><td>2 vs 3, unrelated</td><td class="num">+0.10</td><td class="num">+0.03</td></tr>
+      <tr><td>Numbers per vector</td><td class="num">64</td><td class="num">2,048</td></tr>
+    </tbody>
+  </table></div>
+  <ul class="look">
+    <li>Offline only shared words count, so the paraphrase barely stands out. The real model recognises it.</li>
+    <li>Try your own: <code>... walkthrough embed "first sentence" "second sentence"</code></li>
+  </ul>
+</section>
+
+<!-- 6 -->
+<section class="step" id="s6">
+  <div class="step-head"><span class="step-no">Step 6</span><h2 class="title">Search, with permissions first</h2><label class="done-toggle"><input type="checkbox" id="done-s6" data-step="s6"> Done</label></div>
+  <div class="concept"><h3>Concept</h3>
+    <dl>
+      <dt>Vector search</dt><dd>Embed the question, then find the chunks whose vectors are closest. Fast, but only roughly right.</dd>
+      <dt>Filter before ranking</dt><dd>Chunks you can't see are removed <em>before</em> anything is scored, so restricted text can never leak into results.</dd>
+    </dl>
+  </div>
+  <p>With no question given, the default is <em>"How should the workshop evaluate retrieval quality?"</em>. To ask your own, put it in quotes at the end.</p>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.walkthrough search
+PYTHONPATH=src python3 -m akf_workshop.walkthrough search "When should enterprise incidents be escalated?"</pre></div>
+  <div class="term out"><div class="label">Offline (word hashing)</div><pre>mode: OFFLINE (local fallbacks; no network)
+permission filter: 7 of 11 chunks are visible to you; the rest are never scored.
+
+ 1. vector +0.352  supply-chain-risk-playbook.md   Recommended Action      <span class="c">&lt;- wrong document</span>
+ 2. vector +0.207  supply-chain-risk-playbook.md   Workshop Scope
+ 3. vector +0.184  accounts.csv                    CSV table
+ 4. vector +0.086  box-ai-retrieval.md             Citation Contract
+ 5. vector +0.049  box-ai-retrieval.md             Box AI Retrieval Evaluation
+ ...</pre></div>
+  <p>Now run the same command with the NVIDIA key from Step 0 set:</p>
+  <div class="term out"><div class="label">Online (Nemotron Embed)</div><pre>mode: REMOTE (hosted NVIDIA models are used where available)
+permission filter: 7 of 11 chunks are visible to you; the rest are never scored.
+
+ 1. vector +0.432  box-ai-retrieval.md             Box AI Retrieval Evaluation   <span class="c">&lt;- right document</span>
+ 2. vector +0.235  supply-chain-risk-playbook.md   Workshop Scope
+ 3. vector +0.155  box-ai-retrieval.md             Chunking Guidance
+ 4. vector +0.075  box-ai-retrieval.md             Citation Contract
+ 5. vector +0.039  supply-chain-risk-playbook.md   Support Risk Playbook
+ ...</pre></div>
+  <ul class="look">
+    <li>Offline, the top hit is the playbook, which is the wrong document: it just shares a few words with the question. With Nemotron Embed, <code>box-ai-retrieval.md</code>, the document that actually answers it, comes first.</li>
+    <li>The permission filter is the same in both: 7 of 11. Better models change the ranking, never what you're allowed to see.</li>
+    <li>Without quotes around your question you'll get <code>unrecognized arguments</code>.</li>
+  </ul>
+</section>
+
+<!-- 7 -->
+<section class="step" id="s7">
+  <div class="step-head"><span class="step-no">Step 7</span><h2 class="title">Rerank the candidates</h2><label class="done-toggle"><input type="checkbox" id="done-s7" data-step="s7"> Done</label></div>
+  <div class="concept"><h3>Concept</h3>
+    <dl>
+      <dt>Reranker</dt><dd>Reads the question <em>together with</em> each candidate and scores how well it answers. Slower than vector search, so it only runs on the few candidates search found.</dd>
+      <dt>Logit</dt><dd>The reranker's raw score. It can be negative; higher is better.</dd>
+      <dt>Model</dt><dd><strong>Nemotron 3.5 Rerank 8B</strong> (<code>nvidia/nemotron-3.5-rerank-8b</code>), hosted. Offline, a word-overlap stand-in is used.</dd>
+    </dl>
+  </div>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.walkthrough rerank</pre></div>
+  <div class="term out"><div class="label">You'll see (online)</div><pre>AFTER (reranked, top 4 kept):
+ 1. rerank  -2.36 (hosted)  box-ai-retrieval.md            Box AI Retrieval Evaluation
+ 2. rerank  -3.28 (hosted)  supply-chain-risk-playbook.md  Workshop Scope
+ 3. rerank  -3.35 (hosted)  box-ai-retrieval.md            Citation Contract
+ 4. rerank  -3.58 (hosted)  box-ai-retrieval.md            Chunking Guidance</pre></div>
+  <ul class="look">
+    <li>Compare BEFORE and AFTER: the right document moves to the top.</li>
+    <li>The right chunk leads the next one by about 0.9. That lead, and whether the top score clears the threshold, decide the next step.</li>
+  </ul>
+</section>
+
+<!-- 8 -->
+<section class="step" id="s8">
+  <div class="step-head"><span class="step-no">Step 8</span><h2 class="title">Answer, or refuse</h2><label class="done-toggle"><input type="checkbox" id="done-s8" data-step="s8"> Done</label></div>
+  <div class="concept"><h3>Concept</h3>
+    <dl>
+      <dt>Threshold</dt><dd>If the best chunk's rerank score is below <code>-3.1</code> (online), the evidence is too weak and the status is <code>insufficient_context</code>: the agent refuses instead of guessing.</dd>
+      <dt>Citation</dt><dd>Each chunk used comes with its Box file, path, version and chunk ID, so every answer can be traced to a real file.</dd>
+    </dl>
+  </div>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.walkthrough answer "What must every answer include?"
+PYTHONPATH=src python3 -m akf_workshop.walkthrough answer "When should enterprise incidents be escalated?"</pre></div>
+  <div class="tablewrap"><table>
+    <thead><tr><th></th><th>What must every answer include?</th><th>When should incidents be escalated?</th></tr></thead>
+    <tbody>
+      <tr><td>status</td><td><code>ok</code></td><td><code>insufficient_context</code></td></tr>
+      <tr><td>top score</td><td class="num">−1.95, above −3.1</td><td class="num">−3.30, below −3.1</td></tr>
+      <tr><td>gap to 2nd</td><td class="num">1.13, a clear winner</td><td class="num">0.10, all equally weak</td></tr>
+    </tbody>
+  </table></div>
+  <ul class="look">
+    <li>The escalation answer lives in the support policy, which you can't see. So you're refused. That's correct.</li>
+    <li>Each citation's <code>score</code> is vector plus rerank. The threshold uses <code>top score</code>, the rerank alone.</li>
+    <li>Where −3.1 comes from: every golden question that should be answered scored −2.87 or higher, and every one that should be refused scored −3.31 or lower. −3.1 sits between them. Change the documents or the reranker and you need to measure again.</li>
+  </ul>
+</section>
+
+<!-- 9 -->
+<section class="step" id="s9">
+  <div class="step-head"><span class="step-no">Step 9</span><h2 class="title">Same question, two people</h2><label class="done-toggle"><input type="checkbox" id="done-s9" data-step="s9"> Done</label></div>
+  <p>Ask the escalation question again, this time as a member of the Box group <code>support-leads</code>:</p>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.walkthrough --user support-lead@example.com --groups support-leads answer "When should enterprise incidents be escalated?"</pre></div>
+  <div class="term out"><div class="label">You'll see</div><pre>status:          ok
+citations:
+  enterprise-support-policy.md   box-2541403348737:0008
+
+[box-2541403348737:0008] Escalation
+Enterprise incidents with customer impact should be escalated to the support lead within 30 minutes. ...</pre></div>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Who</th><th>Top rerank score (online)</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Attendee</td><td class="num">−3.30</td><td>Refused: the policy is never searched</td></tr>
+      <tr><td>Support lead</td><td class="num"><strong>−1.22</strong></td><td>Answered from the policy, with a citation</td></tr>
+    </tbody>
+  </table></div>
+  <ul class="look">
+    <li>Nothing in the code knows about "support leads". Box's group on the <code>support-leads/</code> folder decides.</li>
+    <li>Try it: in Box, invite another group to that folder, then run Step 2 again. The change shows up immediately, because permissions are read live every time.</li>
+  </ul>
+</section>
+
+<!-- 10 -->
+<section class="step" id="s10">
+  <div class="step-head"><span class="step-no">Step 10</span><h2 class="title">Predict who needs help, then cite the policy</h2><label class="done-toggle"><input type="checkbox" id="done-s10" data-step="s10"> Done</label></div>
+  <p>The question for this step: <strong>"Which customer is most likely to need help, and what does our policy say to do?"</strong> It needs two kinds of evidence. A <em>prediction</em> from tables says who is at risk. A <em>rule</em> from a document says what to do. The agent combines both.</p>
+
+  <div class="concept"><h3>Concept</h3>
+    <dl>
+      <dt>Skill</dt><dd>A tool the agent can run. This agent has two: <em>retrieval</em> (Steps 6 to 8) and <em>prediction</em>.</dd>
+      <dt>Kumo Relational</dt><dd>NVIDIA's hosted model for predictions over database tables. A normal ML model has to be trained for each task. Kumo is pretrained: you send your tables, a few rows already labelled with the answer, and the row you want predicted. It returns a prediction and a probability, with no training step.</dd>
+      <dt>Rule-based agent</dt><dd>This agent decides which skills to run by keyword. A question with "predict", "risk", "forecast" or "likely" runs prediction <em>and</em> retrieval. No language model is involved (Step 11 adds one).</dd>
+    </dl>
+  </div>
+
+  <h4>The data: two tables in Box</h4>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Account</th><th>Tier</th><th>Days to renewal</th><th>Open cases</th><th>Oldest open case</th></tr></thead>
+    <tbody>
+      <tr><td>Acme Motors (100)</td><td>enterprise</td><td class="num">21</td><td class="num">1</td><td class="num">4 days</td></tr>
+      <tr><td><strong>Beacon Health (101)</strong></td><td>enterprise</td><td class="num"><strong>8</strong></td><td class="num"><strong>3</strong> (one P1, two P2)</td><td class="num"><strong>16 days</strong></td></tr>
+      <tr><td>Cobalt Retail (102)</td><td>business</td><td class="num">45</td><td class="num">1</td><td class="num">3 days</td></tr>
+      <tr><td>Delta Finance (103)</td><td>enterprise</td><td class="num">14</td><td class="num">3</td><td class="num">18 days</td></tr>
+    </tbody>
+  </table></div>
+  <p class="where">From <code>data/accounts.csv</code> (everyone) and <code>support-leads/support_cases.csv</code> (support leads only).</p>
+
+  <h4>What happens when a support lead asks</h4>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.agent.cli --user support-lead@example.com --groups support-leads ask "Predict support risk and cite the policy."</pre></div>
+  <div class="tablewrap"><table>
+    <thead><tr><th></th><th>What happens</th></tr></thead>
+    <tbody>
+      <tr><td class="num">1</td><td><strong>Pick skills.</strong> The question says "predict", so the agent runs prediction and retrieval.</td></tr>
+      <tr><td class="num">2</td><td><strong>Check permission.</strong> Prediction needs <code>support_cases.csv</code>. In Box only the <code>support-leads</code> group can read it, so a support lead may continue.</td></tr>
+      <tr><td class="num">3</td><td><strong>Predict.</strong> Offline: a simple formula scores each account. Online: the tables go to Kumo.</td></tr>
+      <tr><td class="num">4</td><td><strong>Find the policy.</strong> Retrieval finds the <em>Escalation</em> section of the support policy.</td></tr>
+      <tr><td class="num">5</td><td><strong>Combine.</strong> The answer gives the at-risk account, then the policy text, with citations.</td></tr>
+    </tbody>
+  </table></div>
+  <div class="term out"><div class="label">You'll see (online)</div><pre>"answer": "Kumo Relational predicts high support risk for Beacon Health (account 101),
+  probability 0.9998. Policy context: Based on permitted Box context, Enterprise
+  incidents with customer impact should be escalated to the support lead within
+  30 minutes. If a customer has more than three open priority cases or an unresolved
+  case older than 14 days, the account should be marked as elevated risk ...",
+"status": "ok"</pre></div>
+
+  <h4>Offline vs online prediction</h4>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Account</th><th>Offline formula score</th><th>Risk</th></tr></thead>
+    <tbody>
+      <tr><td>Beacon Health</td><td class="num"><strong>1.67</strong></td><td>high, the top one</td></tr>
+      <tr><td>Delta Finance</td><td class="num">1.51</td><td>high</td></tr>
+      <tr><td>Acme Motors</td><td class="num">0.73</td><td>medium</td></tr>
+      <tr><td>Cobalt Retail</td><td class="num">0.21</td><td>low</td></tr>
+    </tbody>
+  </table></div>
+  <p>The offline formula adds points for open cases, priority cases, case age, enterprise tier and a renewal within 21 days. Online, Kumo returns <em>high risk for Beacon Health, probability 0.9998</em>.</p>
+
+  <h4>Now ask as an attendee</h4>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.agent.cli ask "Predict support risk and cite the policy."</pre></div>
+  <div class="term out"><div class="label">You'll see</div><pre>"answer": "The prediction data is restricted to support leads.",
+"status": "denied"</pre></div>
+  <p>Same question, but you can't read <code>support_cases.csv</code> in Box, so no prediction is made. Predictions follow the same permissions as documents.</p>
+
+  <div class="note">This is a demo of <em>how</em> to call Kumo, not a real forecast. The labelled examples it receives come from a simple rule (3 or more open cases, or renewal within 14 days), and the account it predicts is always Beacon Health, which those examples already mark as risky. A real version would label examples from history, such as "did this account escalate within 30 days?", and score every account.</div>
+  <ul class="look">
+    <li>In the JSON, <code>skill_evidence</code> shows the data behind the prediction, and <code>trace</code> lists the two skills that ran.</li>
+    <li>Ask a question without those keywords, like <code>ask "How should the workshop evaluate retrieval quality?"</code>, and the trace shows only retrieval ran.</li>
+  </ul>
+</section>
+
+<!-- 11 -->
+<section class="step" id="s11">
+  <div class="step-head"><span class="step-no">Step 11</span><h2 class="title">A Nemotron agent that chooses its own tools</h2><label class="done-toggle"><input type="checkbox" id="done-s11" data-step="s11"> Done</label></div>
+  <div class="concept"><h3>Concept</h3>
+    <dl>
+      <dt>Tool calling</dt><dd>The model is told which tools exist. It decides which to call, reads the results, can search again with different words, then writes the answer.</dd>
+      <dt>Model</dt><dd><strong>Nemotron 3.5 Super</strong> (<code>nvidia/nemotron-3.5-super-vl-120b-a12b</code>), hosted. Needs the API key from Step 0.</dd>
+      <dt>Guardrails in code</dt><dd>Tools run as the person asking, so permissions can't be bypassed. Weak searches return nothing. An answer only counts if it cites a chunk the tools returned.</dd>
+    </dl>
+  </div>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.agent.cli --agent nemotron --user support-lead@example.com --groups support-leads ask "Which account is most at risk, and what does our policy say we should do?"</pre></div>
+  <div class="term out"><div class="label">You'll see (wording varies)</div><pre>"answer": "Beacon Health (account 101) is predicted to have the highest support risk,
+  with a probability of 0.9998. Per the enterprise support policy, enterprise incidents
+  with customer impact should be escalated to the support lead within 30 minutes
+  [box-2541403348737:0008]. ...",
+"status": "ok",
+"agent": "nemotron"</pre></div>
+  <ul class="look">
+    <li>In the <code>trace</code>, find the turn where the model called <strong>both</strong> tools at once. No rule told it to.</li>
+    <li>Now ask the same question without <code>--user</code> and <code>--groups</code>. The prediction is denied by the code, and the model explains that and answers from what you <em>can</em> see.</li>
+    <li>Each model turn takes about 1 to 8 seconds. If the trace shows <code>llm_retry</code> or <code>"agent": "rule-based-fallback"</code>, NVIDIA's endpoint was busy and the safety net kicked in.</li>
+  </ul>
+</section>
+
+<!-- 12 -->
+<section class="step" id="s12">
+  <div class="step-head"><span class="step-no">Step 12</span><h2 class="title">Measure it, then change one thing</h2><label class="done-toggle"><input type="checkbox" id="done-s12" data-step="s12"> Done</label></div>
+  <p>So far you've judged answers by eye. An <strong>eval</strong> checks many questions at once, so you can change something and see what got better or worse. Each experiment below is one command. Have the NVIDIA key from Step 0 set.</p>
+  <div class="concept"><h3>Concept</h3>
+    <dl>
+      <dt>Golden question</dt><dd>A question with a known right outcome: which file should be found, and whether the agent should answer or refuse. The set used here is in <code>src/akf_workshop/evals/golden_questions_search.json</code>.</dd>
+      <dt>PASS / FAIL</dt><dd>Did the agent answer when it should, and refuse when it should?</dd>
+      <dt>recall@3</dt><dd>Was the right file in the top 3 results? 1.00 means yes.</dd>
+    </dl>
+  </div>
+
+  <h4>Run the eval</h4>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.evals.run_eval --summary \
+  --golden src/akf_workshop/evals/golden_questions_search.json</pre></div>
+  <div class="term out"><div class="label">You'll see (shortened)</div><pre>PASS  recall@3 1.00  ok                     support-lead  How fast must a priority one ticket get a first reply?
+PASS  recall@3 1.00  ok                     dev           How big should chunks be?
+PASS  recall@3 0.00  insufficient_context   dev           What is the warranty on the HX-9000 curing light?
+
+10 of 10 status checks passed · average recall@3 0.90</pre></div>
+  <p>One line per question: the result, recall, what the agent did, who asked, and the question. The HX-9000 line shows recall 0.00 even though refusing is right: no document mentions it, so there's no right file to find.</p>
+
+  <h4>Try 1: make the agent stricter</h4>
+  <p>Raise the refusal threshold from −3.1 to −2.0. The agent now needs a stronger match before it answers.</p>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>AKF_RERANK_MIN_LOGIT=-2.0 PYTHONPATH=src python3 -m akf_workshop.evals.run_eval --summary \
+  --golden src/akf_workshop/evals/golden_questions_search.json</pre></div>
+  <div class="term out"><div class="label">You'll see</div><pre>FAIL  recall@3 1.00  insufficient_context (expected ok)   support-lead  How fast must a priority one ticket get a first reply?
+FAIL  recall@3 1.00  insufficient_context (expected ok)   dev           Which account attributes does the model look at?
+FAIL  recall@3 1.00  insufficient_context (expected ok)   dev           How big should chunks be?
+FAIL  recall@3 1.00  insufficient_context (expected ok)   dev           What is Beacon Health's renewal date?
+
+6 of 10 status checks passed</pre></div>
+  <p>The right file was found every time (recall 1.00), but the agent refused anyway. Too strict, and it turns away questions it could answer.</p>
+
+  <h4>Try 2: make the agent looser</h4>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>AKF_RERANK_MIN_LOGIT=-4.0 PYTHONPATH=src python3 -m akf_workshop.evals.run_eval --summary \
+  --golden src/akf_workshop/evals/golden_questions_search.json</pre></div>
+  <div class="term out"><div class="label">You'll see</div><pre>FAIL  recall@3 0.00  ok (expected insufficient_context)   dev   What is the warranty on the HX-9000 curing light?
+
+9 of 10 status checks passed</pre></div>
+  <p>Now it answers a question no document covers, from unrelated text. Too loose, and it answers questions it can't. That's how confident wrong answers happen. −3.1 sits between the two.</p>
+
+  <h4>Try 3: add your own questions</h4>
+  <p>Write a few questions with the outcome you expect. Copy this whole block; it creates <code>my_questions.json</code> in the repo folder:</p>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>cat &gt; my_questions.json &lt;&lt;'JSON'
+[
+  {"question": "What is the response target for a P3 case?",
+   "user": "support-lead@example.com", "groups": ["support-leads"],
+   "expected_files": ["enterprise-support-policy.md"], "expect_status": "ok"},
+  {"question": "What is our refund policy for cancelled subscriptions?",
+   "user": "dev@example.com", "groups": ["workshop-attendees"],
+   "expected_files": [], "expect_status": "insufficient_context"}
+]
+JSON
+PYTHONPATH=src python3 -m akf_workshop.evals.run_eval --summary --golden my_questions.json</pre></div>
+  <div class="term out"><div class="label">You'll see</div><pre>PASS  recall@3 1.00  ok                     support-lead  What is the response target for a P3 case?
+PASS  recall@3 0.00  insufficient_context   dev           What is our refund policy for cancelled subscriptions?
+
+2 of 2 status checks passed</pre></div>
+  <p>Now open <code>my_questions.json</code> in your editor and change it: reword a question, swap who asks (try the P3 question as <code>dev@example.com</code> with group <code>workshop-attendees</code>; it should become a refusal), or add a question you think will trip it up. Run the last command again after each change.</p>
+
+</section>
+
+<!-- 13 -->
+<section class="step" id="s13">
+  <div class="step-head"><span class="step-no">Step 13</span><h2 class="title">Why run agents in a secure runtime</h2><label class="done-toggle"><input type="checkbox" id="done-s13" data-step="s13"> Done</label></div>
+  <p>Until now the agent only <em>read</em>. Real agents also act: they write reports, edit files and delete things. An agent that can delete can delete the wrong thing, because it misread a request, followed a malicious instruction hidden in a document, or simply made a mistake. These steps run the agent's actions inside <strong>OpenShell</strong>, a secure runtime with rules the agent can't change.</p>
+  <div class="concept"><h3>Concept</h3>
+    <dl>
+      <dt>OpenShell</dt><dd>NVIDIA's secure runtime for agents. It runs each agent's work in its own isolated environment, a small virtual machine (MicroVM), and decides, request by request, what may leave it. The agent can't change those rules. OpenShell's commands call each environment a <em>sandbox</em>, which is why you'll see <code>openshell sandbox …</code> below.</dd>
+      <dt>Network policy</dt><dd>Rules on outgoing HTTP requests: which program may call which host, with which method and path. A <strong>deny</strong> rule beats any allow. Here: "Box Mount may sync with Box, but no <code>DELETE /2.0/files/*</code>."</dd>
+      <dt>Credential placeholder</dt><dd>The real Box token stays with OpenShell, outside the agent's environment. Inside, programs only see a placeholder that OpenShell swaps for the token on approved requests. The agent can't read or leak it.</dd>
+      <dt>Box Mount</dt><dd>Keeps a local folder in sync with a Box folder. The agent edits ordinary files; Box Mount uploads changes and asks Box to delete removed files.</dd>
+    </dl>
+  </div>
+  <figure class="diagram">
+    <img src="images/openshell-box-mount-flow.png" width="2220" height="1330" loading="lazy"
+         alt="Box Mount traffic through OpenShell. Left, the agent's Linux MicroVM: the Codex agent reads and writes the local workspace /sandbox/box; Box Mount syncs it and holds only a token placeholder; the OpenShell runtime intercepts its outbound traffic. Right, the trusted Mac host: the OpenShell gateway holds the operator-managed policy and the Box credentials; the OpenShell supervisor checks the executable and destination, enforces HTTP method and path, and injects the Box token only if permitted. Allowed requests reach the Box API over HTTPS, so the report upload succeeds. A DELETE is blocked with 403 policy_denied and never reaches Box, so the cloud copy is preserved.">
+    <figcaption>Shown with Codex as the agent. With the Nemotron agent (Step 15, option A), the model runs on your laptop and only its file actions run inside the MicroVM; everything to the right is the same.</figcaption>
+  </figure>
+  <div class="note">Two separate controls. Inside OpenShell, the <strong>filesystem</strong> lets the agent delete its local copy. The <strong>network policy</strong> stops that deletion from reaching Box. This demo shows the second one.</div>
+</section>
+
+<!-- 14 -->
+<section class="step" id="s14">
+  <div class="step-head"><span class="step-no">Step 14</span><h2 class="title">Set up OpenShell, Box Mount and the deletion guard</h2><label class="done-toggle"><input type="checkbox" id="done-s14" data-step="s14"> Done</label></div>
+  <p>A one-time setup on your Mac (Apple silicon), following <a href="https://docs.nvidia.com/openshell/latest/about/overview" target="_blank" rel="noopener">NVIDIA's OpenShell docs</a>. Run every command from the workshop repo folder. The files it uses are in the repo's <code>openshell/</code> folder.</p>
+
+  <h4>14a · Install OpenShell</h4>
+  <p><strong>Before you start:</strong> the installer uses <a href="https://brew.sh" target="_blank" rel="noopener">Homebrew</a>, and Homebrew needs current Apple Command Line Tools. Update them first in System Settings → General → Software Update.</p>
+  <div class="term"><div class="label">Mac terminal<button class="copy" type="button">Copy</button></div><pre>curl -LsSf https://raw.githubusercontent.com/NVIDIA/OpenShell/main/install.sh | sh</pre></div>
+  <p>The installer uses Homebrew to install the <code>openshell</code> command and the <strong>gateway</strong>, OpenShell's background service on your Mac. The gateway holds the policies and credentials and runs the agent environments. It registers the gateway as <code>openshell</code> at <code>https://localhost:17670</code>.</p>
+  <p>On a Mac without Docker, the installer ends with <code>local gateway listener did not become reachable</code>, and its log says <code>no compute driver configured</code>. That's expected: the gateway doesn't know how to run agent environments yet. The next step fixes it.</p>
+  <div class="note">If the installer stops with <code>Error: Your Command Line Tools are too outdated</code>, OpenShell wasn't installed. Update the tools and run the installer again. If Software Update shows nothing, reinstall them, then click <strong>Install</strong> in the window that opens and wait for it to finish:
+  <div class="term"><div class="label">Mac terminal<button class="copy" type="button">Copy</button></div><pre>sudo rm -rf /Library/Developer/CommandLineTools
+sudo xcode-select --install</pre></div>
+  Homebrew may also print "tap trust" warnings about other taps you have installed. Those are unrelated and safe to ignore.</div>
+
+  <h4>14b · Run agent environments as MicroVMs</h4>
+  <p>Each agent environment should be its own small Linux virtual machine with no network device of its own, so every request goes through OpenShell. That's the MicroVM runtime. OpenShell never turns it on by itself, so you set it in the gateway's settings and restart the gateway.</p>
+  <div class="term"><div class="label">Mac terminal · Set it up · run once<button class="copy" type="button">Copy</button></div><pre>mkdir -p ~/.config/openshell
+cp openshell/gateway.toml ~/.config/openshell/gateway.toml
+brew services restart openshell</pre></div>
+  <p>The gateway takes about 10 seconds to start after a restart. Then check it:</p>
+  <div class="term"><div class="label">Mac terminal · Check · safe to repeat<button class="copy" type="button">Copy</button></div><pre>openshell gateway info</pre></div>
+  <div class="term out"><div class="label">You'll see</div><pre>Gateway: openshell
+Server: https://localhost:17670
+Status: healthy
+Version: 0.1.5
+Compute drivers:
+  vm
+    Driver name: openshell-driver-vm</pre></div>
+  <div class="note"><strong>Seeing <code>Connection refused</code>?</strong> The gateway is still starting. Wait 10 seconds and run only the check again. Don't re-run the set-up block: each run restarts the gateway, so the check will always be too early.</div>
+  <p>If <code>openshell --version</code> shows an older version than 0.1.5, another copy of <code>openshell</code> comes first on your PATH. Run Homebrew's directly as <code>/opt/homebrew/bin/openshell</code>.</p>
+
+  <h4>14c · Create the agent's environment</h4>
+  <p>OpenShell calls each agent environment a <em>sandbox</em>. Create one called <code>box-agent</code>; it starts from a standard Ubuntu 24.04 image.</p>
+  <div class="term"><div class="label">Mac terminal<button class="copy" type="button">Copy</button></div><pre>openshell sandbox create --name box-agent --detach
+openshell sandbox get box-agent</pre></div>
+  <p>Wait until the phase is <code>Ready</code>.</p>
+
+  <h4>14d · Give OpenShell the Box token</h4>
+  <p>The token stays with OpenShell on your Mac. The <em>provider profile</em> says which program may use it (<code>/sandbox/box-mount</code>) and for which hosts (<code>api.box.com</code>, <code>upload.box.com</code>). Inside the environment, programs only ever see a placeholder.</p>
+  <div class="term"><div class="label">Mac terminal<button class="copy" type="button">Copy</button></div><pre>openshell profile lint -f openshell/box-provider.yaml
+openshell profile import -f openshell/box-provider.yaml
+
+<span class="c"># needs BOX_CLIENT_ID, BOX_CLIENT_SECRET and BOX_ENTERPRISE_ID from Step 1</span>
+PYTHONPATH=src python3 -m akf_workshop.box_source.openshell_token --sandbox box-agent</pre></div>
+  <p>The script gets a token from Box on your Mac, stores it in an OpenShell provider called <code>box-token</code>, and attaches it to <code>box-agent</code>. Tokens last about an hour: run it again to refresh, then restart Box Mount.</p>
+
+  <h4>14e · Install and start Box Mount</h4>
+  <p>Box Mount isn't included in this repo: get the build from your workshop host (or Box) and put its folder, <code>Box Mount Build 2026-09-14/</code>, in the repo folder. It's a Linux program, so it runs inside the environment. Use the <code>aarch64</code> build on Apple silicon.</p>
+  <div class="term"><div class="label">Mac terminal · Install<button class="copy" type="button">Copy</button></div><pre>tar -xzf "Box Mount Build 2026-09-14/box-mount-0.6.0-linux-aarch64.tar.gz" -C /tmp
+openshell sandbox upload box-agent /tmp/box-mount /sandbox/box-mount --no-git-ignore
+openshell sandbox upload box-agent openshell/configure-box-mount.sh /sandbox/configure-box-mount.sh --no-git-ignore
+openshell sandbox exec -n box-agent --no-login-shell -- chmod +x /sandbox/box-mount
+openshell sandbox exec -n box-agent --no-login-shell -- /bin/sh /sandbox/configure-box-mount.sh</pre></div>
+  <p>The last command should say <em>Configured Box Mount with an OpenShell placeholder, not a real token.</em> Box Mount also downloads files from Box's file servers, so allow those, read-only:</p>
+  <div class="term"><div class="label">Mac terminal · Allow downloads<button class="copy" type="button">Copy</button></div><pre>openshell policy update box-agent --rule-name box-mount-downloads --binary /sandbox/box-mount \
+  --add-endpoint public.boxcloud.com:443:read-only:rest:enforce --wait
+openshell policy update box-agent --rule-name box-mount-version-check --binary /sandbox/box-mount \
+  --add-endpoint cdn07.boxcdn.net:443:read-only:rest:enforce --wait</pre></div>
+  <p>Now mount a Box folder that holds <strong>only what the agent may change</strong>. Create one from the command line: it makes <em>Agent Workspace</em> with a <code>Reviewed</code> folder inside, and prints its folder ID. Add <code>--invite</code> with your Box login email to see it in your own Box.</p>
+  <div class="term"><div class="label">Mac terminal · Create the folder<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.box_source.setup_box --agent-workspace --invite you@example.com</pre></div>
+  <div class="term out"><div class="label">You'll see</div><pre>folder   Agent Workspace  (id 429885139067)
+folder   Agent Workspace/Reviewed  (id 429882316313)
+invite   you@example.com as editor: accepted
+
+Done. Mount this folder with Box Mount:
+  export AGENT_FOLDER_ID=429885139067
+  https://app.box.com/folder/429885139067</pre></div>
+  <p>Copy the <code>export AGENT_FOLDER_ID=…</code> line it printed and run it, then mount that folder:</p>
+  <div class="term"><div class="label">Mac terminal · Mount<button class="copy" type="button">Copy</button></div><pre>export AGENT_FOLDER_ID=429885139067   <span class="c"># use the ID printed for you</span>
+openshell sandbox exec -n box-agent --no-login-shell -- /sandbox/box-mount mount /sandbox/box "$AGENT_FOLDER_ID"
+openshell sandbox exec -n box-agent --no-login-shell -- /sandbox/box-mount status</pre></div>
+  <p>Running the create command again is safe: it reuses the folder and the invitation instead of making new ones.</p>
+  <div class="note">Box Mount syncs everything its account can see, with no per-person permissions. If you mounted the whole workshop folder, the agent could read the support-leads policy no matter who asked. Keep knowledge in the folder the agent <em>searches</em> (Steps 2 to 9, permissions enforced) and give it a separate folder to <em>change</em>.</div>
+
+  <h4>14f · Add the deletion guard</h4>
+  <p>Two updates: create the rule, then add the deny to it. A deny beats any allow, including the provider's read-write access.</p>
+  <div class="term"><div class="label">Mac terminal<button class="copy" type="button">Copy</button></div><pre>openshell policy update box-agent --rule-name box-delete-guard --binary /sandbox/box-mount \
+  --add-endpoint api.box.com:443:read-only:rest:enforce --wait
+
+openshell policy update box-agent --rule-name box-delete-guard --binary /sandbox/box-mount \
+  --add-deny 'api.box.com:443:DELETE:/2.0/files/*' --wait
+
+openshell sandbox get box-agent --policy-only</pre></div>
+  <div class="term out"><div class="label">Look for this rule</div><pre>box-delete-guard:
+  endpoints:
+    - host: api.box.com
+      port: 443
+      protocol: rest
+      enforcement: enforce
+      access: read-only
+      deny_rules:
+        - method: DELETE
+          path: /2.0/files/*
+  binaries:
+    - path: /sandbox/box-mount</pre></div>
+  <ul class="look">
+    <li>The rule names one program, one host, one method and one path pattern. Everything else Box Mount does, like uploads, still works.</li>
+    <li>It's the explicit <code>DELETE</code> deny that blocks deletion. <code>access: read-only</code> alone doesn't, because the provider still grants read-write.</li>
+    <li>The agent has no way to change this policy. Only someone with the <code>openshell</code> command on the Mac can.</li>
+  </ul>
+</section>
+
+<!-- 15 -->
+<section class="step" id="s15">
+  <div class="step-head"><span class="step-no">Step 15</span><h2 class="title">Let the agent work</h2><label class="done-toggle"><input type="checkbox" id="done-s15" data-step="s15"> Done</label></div>
+  <p>Pick your agent. Both act on the same folder inside OpenShell, so the same policy applies to both.</p>
+
+  <h4>Option A: the Nemotron agent from Step 11</h4>
+  <p>Its brain stays on your laptop. Add <code>--sandbox</code> and <code>--workspace</code> and it gets four file tools (list, read, write, delete), and every one runs <em>inside</em> OpenShell through <code>openshell sandbox exec</code>. It never sees the Box token.</p>
+  <div class="term"><div class="label">Mac terminal<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.agent.cli --agent nemotron \
+  --user support-lead@example.com --groups support-leads \
+  --sandbox box-agent --workspace /sandbox/box \
+  ask "Find which account is most at risk and what our policy says to do, then write a short review to Reviewed/beacon-risk-review-YOURNAME.md with citations. Don't touch other files."</pre></div>
+  <div class="term out"><div class="label">What we saw</div><pre>tool predict_support_risk                          ok
+tool search_documents  "account at risk support policy what to do"   ok
+tool write_workspace_file  Reviewed/beacon-risk-review.md  &lt;985 characters&gt;  ok
+  "Written to the local workspace. Box Mount uploads it to Box; delivery is not verified by this tool."</pre></div>
+  <ul class="look">
+    <li>One model turn chose prediction and search, then wrote a cited review. Use your own filename: the tool refuses to overwrite.</li>
+    <li>The tool says what it knows (the local write) and what it doesn't (whether Box received it). You check Box yourself.</li>
+    <li>Paths are confined to the workspace: <code>../</code>, absolute paths and hidden files like Box Mount's config are refused.</li>
+  </ul>
+
+  <h4>Option B: Codex inside OpenShell</h4>
+  <div class="note"><strong>Where each command runs.</strong> Blocks labelled <em>Mac terminal</em> go in a terminal on your Mac, in the workshop repo folder. Blocks labelled <em>Paste into Codex</em> go into Codex, which runs inside OpenShell. Codex can't run the Mac commands: inside OpenShell there's no Python, no Box token and no network access to Box, on purpose.</div>
+  <p>Codex runs entirely inside the MicroVM, with its own approval prompts on top of OpenShell's rules. Set it up once:</p>
+  <div class="term"><div class="label">Mac terminal · 1 · Install Codex in the environment<button class="copy" type="button">Copy</button></div><pre>curl -L -o /tmp/codex-package.tar.gz \
+  https://github.com/openai/codex/releases/download/rust-v0.162.1/codex-package-aarch64-unknown-linux-musl.tar.gz
+openshell sandbox upload box-agent /tmp/codex-package.tar.gz /sandbox/codex-package.tar.gz --no-git-ignore
+openshell sandbox exec -n box-agent --no-login-shell -- tar -xzf /sandbox/codex-package.tar.gz -C /sandbox
+openshell sandbox exec -n box-agent --no-login-shell -- /sandbox/bin/codex --version</pre></div>
+  <p>That's OpenAI's official Codex package for Linux on arm64. It should print <code>codex-cli 0.162.1</code>.</p>
+  <div class="term"><div class="label">Mac terminal · 2 · Let Codex, and only Codex, reach OpenAI<button class="copy" type="button">Copy</button></div><pre>for host in api.openai.com auth.openai.com chatgpt.com ab.chatgpt.com; do
+  openshell policy update box-agent --rule-name "codex_${host//./_}" --binary /sandbox/bin/codex \
+    --add-endpoint "$host:443:read-write:rest:enforce" --wait
+done</pre></div>
+  <p>Each rule names <code>/sandbox/bin/codex</code>, so no other program in the environment can use these hosts. Box Mount's rules, and the deletion guard, are unchanged.</p>
+  <div class="term"><div class="label">Mac terminal · 3 · Sign in to Codex<button class="copy" type="button">Copy</button></div><pre>openshell sandbox exec -n box-agent --tty --no-login-shell -- /sandbox/bin/codex login --device-auth</pre></div>
+  <p>Open the link it prints in your browser and enter the one-time code. Your Codex account and your Box account don't need to match. The Box token is never given to Codex.</p>
+  <div class="term"><div class="label">Mac terminal · 4 · Start Codex in the workspace<button class="copy" type="button">Copy</button></div><pre>openshell sandbox exec -n box-agent --tty --no-login-shell --workdir /sandbox/box/Reviewed -- \
+  /sandbox/bin/codex --no-daemon --sandbox workspace-write --ask-for-approval on-request --cd /sandbox/box/Reviewed</pre></div>
+  <p>Paste into Codex:</p>
+  <div class="term"><div class="label">Paste into Codex<button class="copy" type="button">Copy</button></div><pre>List the files in /sandbox/box/Reviewed.
+
+Write a short note to /sandbox/box/Reviewed/codex-note-YOURNAME.md that describes
+each file you found in one sentence. If a risk review is there, add a three-step
+action plan based on it.
+If this output already exists, stop; do not overwrite it.
+
+Do not change or delete any other file.
+Do not inspect credentials, change policy, install tools, or contact people.
+Report when the local write completes. Do not claim delivery to Box without verification.</pre></div>
+  <p>Codex asks before running commands. Approve only the ones that read the folder and write your note.</p>
+  <p>When you quit, Codex suggests <code>codex resume &lt;id&gt;</code>. Codex lives inside OpenShell, not on your Mac, so typing that on your Mac gives <code>command not found</code>. Resume through OpenShell instead:</p>
+  <div class="term"><div class="label">Mac terminal · Resume a Codex session<button class="copy" type="button">Copy</button></div><pre>openshell sandbox exec -n box-agent --tty --no-login-shell --workdir /sandbox/box/Reviewed -- \
+  /sandbox/bin/codex --no-daemon --sandbox workspace-write --ask-for-approval on-request \
+  --cd /sandbox/box/Reviewed resume   <span class="c"># add the session ID, or pick from the list</span></pre></div>
+  <p><strong>Then check Box.</strong> Open your Agent Workspace folder in Box (the link <code>setup_box</code> printed) and refresh. The new report is in <code>Reviewed</code>: the upload was allowed by the policy.</p>
+</section>
+
+<!-- 16 -->
+<section class="step" id="s16">
+  <div class="step-head"><span class="step-no">Step 16</span><h2 class="title">Watch the policy hold</h2><label class="done-toggle"><input type="checkbox" id="done-s16" data-step="s16"> Done</label></div>
+  <p>Now ask the agent to delete something. Use a <strong>disposable</strong> file that exists both in the workspace and in Box.</p>
+
+  <h4>16a · Make a disposable file</h4>
+  <p>Create it inside OpenShell. Box Mount uploads it to Box within a few seconds, so it exists in both places.</p>
+  <div class="term"><div class="label">Mac terminal<button class="copy" type="button">Copy</button></div><pre>openshell sandbox exec -n box-agent --no-login-shell -- /bin/sh -c \
+  'echo "Disposable file for the deletion test." &gt; /sandbox/box/Reviewed/delete-me-demo.txt'</pre></div>
+  <p>Open <code>Reviewed</code> in your Agent Workspace folder in Box and refresh: the file appears within a few seconds. Open it and note its <strong>file ID</strong>, the number at the end of its URL, <code>https://app.box.com/file/FILE_ID</code>.</p>
+  <p>Create the file this way rather than uploading it through Box. Box Mount picks up new files from Box only every couple of minutes, and may skip files added by its own account.</p>
+
+  <h4>16b · Ask the agent to delete it</h4>
+  <div class="term"><div class="label">Mac terminal · Nemotron agent<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.agent.cli --agent nemotron \
+  --sandbox box-agent --workspace /sandbox/box \
+  ask "Delete only Reviewed/delete-me-demo.txt. Report the local result separately from Box."</pre></div>
+  <div class="term out"><div class="label">What we saw</div><pre>tool list_workspace                                       ok
+tool delete_workspace_file  Reviewed/delete-me-demo.txt   ok
+
+"Local result: Reviewed/delete-me-demo.txt was deleted from the local workspace successfully.
+ Box result: Unknown. Box Mount will request deletion from Box, but policy may block it;
+ the tool does not have knowledge of the Box-side outcome."</pre></div>
+  <div class="term"><div class="label">Or paste into Codex<button class="copy" type="button">Copy</button></div><pre>Delete only the disposable local file
+/sandbox/box/Reviewed/delete-me-demo.txt.
+
+Do not touch any other file, change policy, or try another deletion method.
+Report the local deletion result separately from whether Box Mount can
+propagate the deletion to Box. Do not claim a remote result without evidence.</pre></div>
+
+  <h4>16c · Check all three pieces of evidence</h4>
+  <p>Give Box Mount up to a couple of minutes to try the deletion, then:</p>
+  <div class="term"><div class="label">Mac terminal · 1 · The local copy is gone<button class="copy" type="button">Copy</button></div><pre>openshell sandbox exec -n box-agent --no-login-shell -- ls /sandbox/box/Reviewed</pre></div>
+  <div class="term"><div class="label">Mac terminal · 2 · OpenShell denied Box Mount's DELETE<button class="copy" type="button">Copy</button></div><pre>openshell sandbox exec -n box-agent --no-login-shell -- /bin/sh -c \
+  'tail -n 3000 /sandbox/.box-mount/logs/box-mount-sync.stderr.log | grep -E "DELETE https:|^Status:|^Code:|^Method:" | tail -4'</pre></div>
+  <div class="term out"><div class="label">You'll see</div><pre>"DELETE https://api.box.com/2.0/files/2542159113336" 403
+Status: 403
+Code: policy_denied
+Method: DELETE</pre></div>
+  <p><strong>3 · The file is still in Box.</strong> Refresh the folder in Box: <code>delete-me-demo.txt</code> is still there, with the same file ID.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Evidence</th><th>Where</th><th>What we saw</th></tr></thead>
+    <tbody>
+      <tr><td>Local copy</td><td>inside OpenShell</td><td>gone: the agent's deletion worked</td></tr>
+      <tr><td>Remote DELETE</td><td>Box Mount's log</td><td><code>403 policy_denied</code> from OpenShell, for file <code>2542159113336</code></td></tr>
+      <tr><td>Cloud file</td><td>Box, in the browser</td><td>still there: same file ID, same size</td></tr>
+    </tbody>
+  </table></div>
+  <ul class="look">
+    <li>The file ID in the DELETE line must match the one from 16a. That's what ties the denial to <em>this</em> file.</li>
+    <li>A <code>403</code> from Box itself about permissions isn't this proof. It must say <code>policy_denied</code>.</li>
+    <li>A <code>401</code> or <code>credential_unavailable</code> means the Box token expired: run the token script from 14d again. That's authentication, not the policy.</li>
+    <li>If the agent reports <code>llm_rate_limited</code> or <code>status: error</code>, NVIDIA's endpoint was busy. Check the trace for what was done, wait a moment and ask again.</li>
+    <li><strong>Leave the guard on afterwards.</strong> Box Mount keeps retrying a pending deletion, and removing the rule would let it through.</li>
+  </ul>
+  <div class="note g"><strong>What this shows, precisely.</strong> The agent was allowed to create and sync its report and to delete its local copy, but not to delete anything in Box. The model never held the Box token and couldn't change the rule. It doesn't show per-person permissions inside the synced folder, or that a downloaded copy keeps Box's governance; those need their own design.</div>
+</section>
+
+<footer>
+  The full reference is the repo's <code>README.md</code>. IDs and scores on this page come from a real run against Box. Yours will have different Box IDs, and hosted scores can shift slightly between runs.
+</footer>
+</main>
+</div>
+
+<script>
+(function () {
+  // Copy buttons: copy the command text, without the dimmed comments.
+  document.querySelectorAll(".term .copy").forEach(function (button) {
+    button.addEventListener("click", function () {
+      var pre = button.closest(".term").querySelector("pre");
+      var text = Array.from(pre.childNodes).map(function (node) {
+        return node.nodeType === 1 && node.classList.contains("c") ? "" : node.textContent;
+      }).join("").replace(/[ \t]+$/gm, "");
+      var done = function () {
+        button.textContent = "Copied";
+        button.classList.add("ok");
+        setTimeout(function () { button.textContent = "Copy"; button.classList.remove("ok"); }, 1600);
+      };
+      var fallback = function () {
+        var range = document.createRange();
+        range.selectNodeContents(pre);
+        var selection = window.getSelection();
+        selection.removeAllRanges();
+        selection.addRange(range);
+        button.textContent = "Press Ctrl/⌘ + C";
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, fallback);
+      } else {
+        fallback();
+      }
+    });
+  });
+
+  // "Done" checkboxes, remembered in this browser only.
+  var KEY = "akf-walkthrough-done";
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem(KEY) || "{}") || {}; } catch (e) { saved = {}; }
+  var boxes = Array.from(document.querySelectorAll(".done-toggle input"));
+  function render() {
+    var count = 0;
+    boxes.forEach(function (box) {
+      var step = box.dataset.step;
+      var item = document.querySelector('#nav li[data-step="' + step + '"]');
+      if (box.checked) count++;
+      if (item) item.classList.toggle("done", box.checked);
+    });
+    document.getElementById("progress-text").textContent = count + " of " + boxes.length + " steps done";
+    document.getElementById("progress-bar").style.width = (100 * count / boxes.length) + "%";
+  }
+  boxes.forEach(function (box) {
+    box.checked = !!saved[box.dataset.step];
+    box.addEventListener("change", function () {
+      saved[box.dataset.step] = box.checked;
+      try { localStorage.setItem(KEY, JSON.stringify(saved)); } catch (e) {}
+      render();
+    });
+  });
+  render();
+})();
+</script>
+</body>
+</html>

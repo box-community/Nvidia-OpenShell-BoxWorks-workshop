@@ -1,0 +1,12 @@
+[project]
+name = "box-akf-nvidia-workshop"
+version = "0.1.0"
+description = "Box + NVIDIA Agent Knowledge Foundation workshop starter code"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.optional-dependencies]
+pdf = ["pypdfium2>=5", "Pillow>=10"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
