@@ -203,9 +203,19 @@ footer { border-top: 1px solid var(--line); padding-top: 24px; color: var(--mute
 <!-- 0 -->
 <section class="step" id="s0">
   <div class="step-head"><span class="step-no">Step 0</span><h2 class="title">Before you start</h2><label class="done-toggle"><input type="checkbox" id="done-s0" data-step="s0"> Done</label></div>
-  <p>You need Python 3.10 or newer and a copy of the workshop repo. No GPU, and nothing to install for the core steps. Run every command from the repo folder.</p>
-  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>cd boxworks-workshop
-PYTHONPATH=src python3 -m unittest discover -s tests</pre></div>
+  <p>Steps 0 to 12 run on <strong>Mac or Windows</strong>. Steps 13 to 16 (agent security) need a Mac with Apple silicon, or Linux; on Windows, follow them as a demo. No GPU needed.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th></th><th>Mac</th><th>Windows</th></tr></thead>
+    <tbody>
+      <tr><td>Terminal</td><td>Terminal</td><td>PowerShell</td></tr>
+      <tr><td>Python 3.9 or newer</td><td>comes with Apple's Command Line Tools (<code>xcode-select --install</code>)</td><td>install from <a href="https://www.python.org/downloads/" target="_blank" rel="noopener">python.org</a>, ticking <em>Add python.exe to PATH</em></td></tr>
+      <tr><td>Run a command</td><td><code>python3 workshop.py …</code></td><td><code>python workshop.py …</code></td></tr>
+      <tr><td>Set a setting</td><td><code>export NAME="value"</code></td><td><code>$env:NAME="value"</code></td></tr>
+    </tbody>
+  </table></div>
+  <p>Commands on this page are written for Mac. <strong>On Windows, type <code>python</code> where it says <code>python3</code></strong>; where the two differ in any other way, both versions are shown. Run every command from the repo folder.</p>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>cd BoxWorks          <span class="c"># the folder you downloaded</span>
+python3 workshop.py test</pre></div>
   <p>The last line should say <code>OK</code>.</p>
   <h4>Get your NVIDIA API key</h4>
   <p>Several steps compare a local stand-in with the real NVIDIA model. To use the real ones, you need a free NVIDIA API key:</p>
@@ -217,8 +227,10 @@ PYTHONPATH=src python3 -m unittest discover -s tests</pre></div>
     </tbody>
   </table></div>
   <p>Then set it in the same terminal you run the commands in. Without it, everything still runs offline.</p>
-  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>export NVIDIA_API_KEY="nvapi-..."   <span class="c"># your key from build.nvidia.com</span>
+  <div class="term"><div class="label">Mac terminal<button class="copy" type="button">Copy</button></div><pre>export NVIDIA_API_KEY="nvapi-..."   <span class="c"># your key from build.nvidia.com</span>
 export NVIDIA_USE_REMOTE=1</pre></div>
+  <div class="term"><div class="label">Windows PowerShell<button class="copy" type="button">Copy</button></div><pre>$env:NVIDIA_API_KEY="nvapi-..."   <span class="c"># your key from build.nvidia.com</span>
+$env:NVIDIA_USE_REMOTE="1"</pre></div>
   <div class="note">Keep keys in your terminal only. Don't paste them into chat, documents or code. Every command prints <code>mode: REMOTE</code> or <code>mode: OFFLINE</code> so you always know which models ran.</div>
 </section>
 
@@ -232,11 +244,14 @@ export NVIDIA_USE_REMOTE=1</pre></div>
     </dl>
   </div>
   <p>Your workshop host gives you these values, or you create your own Box Platform app (see the README's Setup). Set them in your terminal:</p>
-  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>export BOX_CLIENT_ID="..."
+  <div class="term"><div class="label">Mac terminal<button class="copy" type="button">Copy</button></div><pre>export BOX_CLIENT_ID="..."
 export BOX_CLIENT_SECRET="..."
 export BOX_ENTERPRISE_ID="..."</pre></div>
+  <div class="term"><div class="label">Windows PowerShell<button class="copy" type="button">Copy</button></div><pre>$env:BOX_CLIENT_ID="..."
+$env:BOX_CLIENT_SECRET="..."
+$env:BOX_ENTERPRISE_ID="..."</pre></div>
   <p><strong>Using your own Box?</strong> Create the workshop folder once. It uploads five sample files and sets up two Box groups. Skip this if your host already gave you a folder ID.</p>
-  <div class="term"><div class="label">Run once<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.box_source.setup_box</pre></div>
+  <div class="term"><div class="label">Run once<button class="copy" type="button">Copy</button></div><pre>python3 workshop.py setup-box</pre></div>
   <div class="term out"><div class="label">What it creates</div><pre>Context-Aware Agents Workshop/
   docs/           shared with group workshop-attendees
   data/           shared with group workshop-attendees
@@ -247,8 +262,9 @@ export BOX_ENTERPRISE_ID="..."</pre></div>
 Done. Use this folder:
   export BOX_FOLDER_ID=429759160477</pre></div>
   <p>Point the workshop at the folder. From now on, every step reads from Box.</p>
-  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>export BOX_FOLDER_ID=429759160477   <span class="c"># or the ID printed for your folder</span></pre></div>
-  <div class="note g">To go back to the local sample files at any point, run <code>unset BOX_FOLDER_ID</code>. Every step works either way.</div>
+  <div class="term"><div class="label">Mac terminal<button class="copy" type="button">Copy</button></div><pre>export BOX_FOLDER_ID=429759160477   <span class="c"># or the ID printed for your folder</span></pre></div>
+  <div class="term"><div class="label">Windows PowerShell<button class="copy" type="button">Copy</button></div><pre>$env:BOX_FOLDER_ID="429759160477"   <span class="c"># or the ID printed for your folder</span></pre></div>
+  <div class="note g">To go back to the local sample files at any point, run <code>unset BOX_FOLDER_ID</code> (Windows: <code>Remove-Item Env:BOX_FOLDER_ID</code>). Every step works either way.</div>
 </section>
 
 <!-- 2 -->
@@ -261,7 +277,7 @@ Done. Use this folder:
       <dt>ACL</dt><dd>Access control list: the users and groups allowed to read one file. The code builds it from Box's collaborations and attaches it to the file.</dd>
     </dl>
   </div>
-  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.walkthrough files</pre></div>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>python3 workshop.py walkthrough files</pre></div>
   <div class="term out"><div class="label">You'll see (shortened)</div><pre>source: Box folder 429759160477 (live Box API)
 
 box-ai-retrieval.md  (text/markdown)
@@ -288,7 +304,7 @@ enterprise-support-policy.md  (text/markdown)
       <dt>Layout model</dt><dd>Text files can be split by their headings. A PDF page or an image is only pixels, so a model has to find the title, paragraphs and tables. That's what <strong>Nemotron Parse</strong> does.</dd>
     </dl>
   </div>
-  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.walkthrough parse</pre></div>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>python3 workshop.py walkthrough parse</pre></div>
   <p>The 5 files become 11 sections in total. Markdown splits at each <code>#</code> heading, and each CSV becomes one summary:</p>
   <div class="tablewrap"><table>
     <thead><tr><th>File</th><th>Sections</th><th>Why</th></tr></thead>
@@ -303,8 +319,8 @@ enterprise-support-policy.md  (text/markdown)
   </table></div>
   <h4>Now parse an image with Nemotron Parse <span class="tag nv">hosted</span></h4>
   <p>Needs the API key from Step 0 and two small libraries:</p>
-  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>pip install "pypdfium2>=5" "Pillow>=10"
-PYTHONPATH=src python3 -m akf_workshop.walkthrough parse --file tests/fixtures/response_targets.png</pre></div>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>python3 -m pip install --user "pypdfium2>=5" "Pillow>=10"
+python3 workshop.py walkthrough parse --file tests/fixtures/response_targets.png</pre></div>
   <div class="term out"><div class="label">You'll see</div><pre>response_targets.png   [text]   22 words  heading: p1: Support Response Targets
 response_targets.png   [table]  41 words  heading: p1: Support Response Targets
 
@@ -315,8 +331,8 @@ response_targets.png   [table]  41 words  heading: p1: Support Response Targets
 | P2 | 2 hours | 4 hours |
 | P3 | 1 business day | 2 business days |</pre></div>
   <p>See where the model found each part. <code>--show</code> draws its boxes onto a <em>copy</em> of the image:</p>
-  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.walkthrough parse --file tests/fixtures/response_targets.png --show boxes.png
-open boxes.png</pre></div>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>python3 workshop.py walkthrough parse --file tests/fixtures/response_targets.png --show boxes.png
+open boxes.png        <span class="c"># Windows: start boxes.png</span></pre></div>
   <ul class="look">
     <li>The table comes back as a real table, every row and column in place, not a jumble of words.</li>
     <li>Your original image never changes. The boxes go into <code>boxes.png</code>.</li>
@@ -332,7 +348,7 @@ open boxes.png</pre></div>
       <dt>Chunk</dt><dd>A piece of at most 120 words. Small pieces make search precise. Each chunk keeps its file, Box version and permissions. A table is never split, so a row is never separated from its header.</dd>
     </dl>
   </div>
-  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.walkthrough chunk</pre></div>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>python3 workshop.py walkthrough chunk</pre></div>
   <div class="term out"><div class="label">You'll see (shortened)</div><pre>box-2541404399963:0001   69 words  box-ai-retrieval.md            Box AI Retrieval Evaluation
 box-2541404399963:0002   48 words  box-ai-retrieval.md            Chunking Guidance
 box-2541403348737:0008   47 words  enterprise-support-policy.md   Escalation
@@ -366,7 +382,7 @@ box-2541403348737:0008   47 words  enterprise-support-policy.md   Escalation
       <dt>Model</dt><dd><strong>Nemotron 3 Embed 1B</strong> (<code>nvidia/nemotron-3-embed-1b</code>), hosted by NVIDIA. Offline, a simple word-hashing stand-in is used.</dd>
     </dl>
   </div>
-  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.walkthrough embed</pre></div>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>python3 workshop.py walkthrough embed</pre></div>
   <p>It compares three sentences. 1 and 2 mean the same thing in different words, and 3 is unrelated:</p>
   <div class="tablewrap"><table>
     <thead><tr><th>Pair</th><th>Offline (word hashing)</th><th>Nemotron Embed</th></tr></thead>
@@ -393,8 +409,8 @@ box-2541403348737:0008   47 words  enterprise-support-policy.md   Escalation
     </dl>
   </div>
   <p>With no question given, the default is <em>"How should the workshop evaluate retrieval quality?"</em>. To ask your own, put it in quotes at the end.</p>
-  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.walkthrough search
-PYTHONPATH=src python3 -m akf_workshop.walkthrough search "When should enterprise incidents be escalated?"</pre></div>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>python3 workshop.py walkthrough search
+python3 workshop.py walkthrough search "When should enterprise incidents be escalated?"</pre></div>
   <div class="term out"><div class="label">Offline (word hashing)</div><pre>mode: OFFLINE (local fallbacks; no network)
 permission filter: 7 of 11 chunks are visible to you; the rest are never scored.
 
@@ -431,7 +447,7 @@ permission filter: 7 of 11 chunks are visible to you; the rest are never scored.
       <dt>Model</dt><dd><strong>Nemotron 3.5 Rerank 8B</strong> (<code>nvidia/nemotron-3.5-rerank-8b</code>), hosted. Offline, a word-overlap stand-in is used.</dd>
     </dl>
   </div>
-  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.walkthrough rerank</pre></div>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>python3 workshop.py walkthrough rerank</pre></div>
   <div class="term out"><div class="label">You'll see (online)</div><pre>AFTER (reranked, top 4 kept):
  1. rerank  -2.36 (hosted)  box-ai-retrieval.md            Box AI Retrieval Evaluation
  2. rerank  -3.28 (hosted)  supply-chain-risk-playbook.md  Workshop Scope
@@ -452,8 +468,8 @@ permission filter: 7 of 11 chunks are visible to you; the rest are never scored.
       <dt>Citation</dt><dd>Each chunk used comes with its Box file, path, version and chunk ID, so every answer can be traced to a real file.</dd>
     </dl>
   </div>
-  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.walkthrough answer "What must every answer include?"
-PYTHONPATH=src python3 -m akf_workshop.walkthrough answer "When should enterprise incidents be escalated?"</pre></div>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>python3 workshop.py walkthrough answer "What must every answer include?"
+python3 workshop.py walkthrough answer "When should enterprise incidents be escalated?"</pre></div>
   <div class="tablewrap"><table>
     <thead><tr><th></th><th>What must every answer include?</th><th>When should incidents be escalated?</th></tr></thead>
     <tbody>
@@ -473,7 +489,7 @@ PYTHONPATH=src python3 -m akf_workshop.walkthrough answer "When should enterpris
 <section class="step" id="s9">
   <div class="step-head"><span class="step-no">Step 9</span><h2 class="title">Same question, two people</h2><label class="done-toggle"><input type="checkbox" id="done-s9" data-step="s9"> Done</label></div>
   <p>Ask the escalation question again, this time as a member of the Box group <code>support-leads</code>:</p>
-  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.walkthrough --user support-lead@example.com --groups support-leads answer "When should enterprise incidents be escalated?"</pre></div>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>python3 workshop.py walkthrough --user support-lead@example.com --groups support-leads answer "When should enterprise incidents be escalated?"</pre></div>
   <div class="term out"><div class="label">You'll see</div><pre>status:          ok
 citations:
   enterprise-support-policy.md   box-2541403348737:0008
@@ -519,7 +535,7 @@ Enterprise incidents with customer impact should be escalated to the support lea
   <p class="where">From <code>data/accounts.csv</code> (everyone) and <code>support-leads/support_cases.csv</code> (support leads only).</p>
 
   <h4>What happens when a support lead asks</h4>
-  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.agent.cli --user support-lead@example.com --groups support-leads ask "Predict support risk and cite the policy."</pre></div>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>python3 workshop.py agent --user support-lead@example.com --groups support-leads ask "Predict support risk and cite the policy."</pre></div>
   <div class="tablewrap"><table>
     <thead><tr><th></th><th>What happens</th></tr></thead>
     <tbody>
@@ -550,7 +566,7 @@ Enterprise incidents with customer impact should be escalated to the support lea
   <p>The offline formula adds points for open cases, priority cases, case age, enterprise tier and a renewal within 21 days. Online, Kumo returns <em>high risk for Beacon Health, probability 0.9998</em>.</p>
 
   <h4>Now ask as an attendee</h4>
-  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.agent.cli ask "Predict support risk and cite the policy."</pre></div>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>python3 workshop.py agent ask "Predict support risk and cite the policy."</pre></div>
   <div class="term out"><div class="label">You'll see</div><pre>"answer": "The prediction data is restricted to support leads.",
 "status": "denied"</pre></div>
   <p>Same question, but you can't read <code>support_cases.csv</code> in Box, so no prediction is made. Predictions follow the same permissions as documents.</p>
@@ -572,7 +588,7 @@ Enterprise incidents with customer impact should be escalated to the support lea
       <dt>Guardrails in code</dt><dd>Tools run as the person asking, so permissions can't be bypassed. Weak searches return nothing. An answer only counts if it cites a chunk the tools returned.</dd>
     </dl>
   </div>
-  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.agent.cli --agent nemotron --user support-lead@example.com --groups support-leads ask "Which account is most at risk, and what does our policy say we should do?"</pre></div>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>python3 workshop.py agent --agent nemotron --user support-lead@example.com --groups support-leads ask "Which account is most at risk, and what does our policy say we should do?"</pre></div>
   <div class="term out"><div class="label">You'll see (wording varies)</div><pre>"answer": "Beacon Health (account 101) is predicted to have the highest support risk,
   with a probability of 0.9998. Per the enterprise support policy, enterprise incidents
   with customer impact should be escalated to the support lead within 30 minutes
@@ -599,8 +615,7 @@ Enterprise incidents with customer impact should be escalated to the support lea
   </div>
 
   <h4>Run the eval</h4>
-  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.evals.run_eval --summary \
-  --golden src/akf_workshop/evals/golden_questions_search.json</pre></div>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>python3 workshop.py eval --summary --golden src/akf_workshop/evals/golden_questions_search.json</pre></div>
   <div class="term out"><div class="label">You'll see (shortened)</div><pre>PASS  recall@3 1.00  ok                     support-lead  How fast must a priority one ticket get a first reply?
 PASS  recall@3 1.00  ok                     dev           How big should chunks be?
 PASS  recall@3 0.00  insufficient_context   dev           What is the warranty on the HX-9000 curing light?
@@ -610,8 +625,7 @@ PASS  recall@3 0.00  insufficient_context   dev           What is the warranty o
 
   <h4>Try 1: make the agent stricter</h4>
   <p>Raise the refusal threshold from −3.1 to −2.0. The agent now needs a stronger match before it answers.</p>
-  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>AKF_RERANK_MIN_LOGIT=-2.0 PYTHONPATH=src python3 -m akf_workshop.evals.run_eval --summary \
-  --golden src/akf_workshop/evals/golden_questions_search.json</pre></div>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>python3 workshop.py --env AKF_RERANK_MIN_LOGIT=-2.0 eval --summary --golden src/akf_workshop/evals/golden_questions_search.json</pre></div>
   <div class="term out"><div class="label">You'll see</div><pre>FAIL  recall@3 1.00  insufficient_context (expected ok)   support-lead  How fast must a priority one ticket get a first reply?
 FAIL  recall@3 1.00  insufficient_context (expected ok)   dev           Which account attributes does the model look at?
 FAIL  recall@3 1.00  insufficient_context (expected ok)   dev           How big should chunks be?
@@ -621,26 +635,16 @@ FAIL  recall@3 1.00  insufficient_context (expected ok)   dev           What is 
   <p>The right file was found every time (recall 1.00), but the agent refused anyway. Too strict, and it turns away questions it could answer.</p>
 
   <h4>Try 2: make the agent looser</h4>
-  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>AKF_RERANK_MIN_LOGIT=-4.0 PYTHONPATH=src python3 -m akf_workshop.evals.run_eval --summary \
-  --golden src/akf_workshop/evals/golden_questions_search.json</pre></div>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>python3 workshop.py --env AKF_RERANK_MIN_LOGIT=-4.0 eval --summary --golden src/akf_workshop/evals/golden_questions_search.json</pre></div>
   <div class="term out"><div class="label">You'll see</div><pre>FAIL  recall@3 0.00  ok (expected insufficient_context)   dev   What is the warranty on the HX-9000 curing light?
 
 9 of 10 status checks passed</pre></div>
   <p>Now it answers a question no document covers, from unrelated text. Too loose, and it answers questions it can't. That's how confident wrong answers happen. −3.1 sits between the two.</p>
 
   <h4>Try 3: add your own questions</h4>
-  <p>Write a few questions with the outcome you expect. Copy this whole block; it creates <code>my_questions.json</code> in the repo folder:</p>
-  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>cat &gt; my_questions.json &lt;&lt;'JSON'
-[
-  {"question": "What is the response target for a P3 case?",
-   "user": "support-lead@example.com", "groups": ["support-leads"],
-   "expected_files": ["enterprise-support-policy.md"], "expect_status": "ok"},
-  {"question": "What is our refund policy for cancelled subscriptions?",
-   "user": "dev@example.com", "groups": ["workshop-attendees"],
-   "expected_files": [], "expect_status": "insufficient_context"}
-]
-JSON
-PYTHONPATH=src python3 -m akf_workshop.evals.run_eval --summary --golden my_questions.json</pre></div>
+  <p>Write questions with the outcome you expect. The first command creates <code>my_questions.json</code> in the repo folder with two example questions; the second runs the eval on it:</p>
+  <div class="term"><div class="label">Run<button class="copy" type="button">Copy</button></div><pre>python3 workshop.py my-questions
+python3 workshop.py eval --summary --golden my_questions.json</pre></div>
   <div class="term out"><div class="label">You'll see</div><pre>PASS  recall@3 1.00  ok                     support-lead  What is the response target for a P3 case?
 PASS  recall@3 0.00  insufficient_context   dev           What is our refund policy for cancelled subscriptions?
 
@@ -653,6 +657,7 @@ PASS  recall@3 0.00  insufficient_context   dev           What is our refund pol
 <section class="step" id="s13">
   <div class="step-head"><span class="step-no">Step 13</span><h2 class="title">Why run agents in a secure runtime</h2><label class="done-toggle"><input type="checkbox" id="done-s13" data-step="s13"> Done</label></div>
   <p>Until now the agent only <em>read</em>. Real agents also act: they write reports, edit files and delete things. An agent that can delete can delete the wrong thing, because it misread a request, followed a malicious instruction hidden in a document, or simply made a mistake. These steps run the agent's actions inside <strong>OpenShell</strong>, a secure runtime with rules the agent can't change.</p>
+  <div class="note"><strong>Mac (Apple silicon) or Linux only.</strong> OpenShell's Windows support is still experimental, so on Windows, follow Steps 13 to 16 as a demo or pair with someone on a Mac.</div>
   <div class="concept"><h3>Concept</h3>
     <dl>
       <dt>OpenShell</dt><dd>NVIDIA's secure runtime for agents. It runs each agent's work in its own isolated environment, a small virtual machine (MicroVM), and decides, request by request, what may leave it. The agent can't change those rules. OpenShell's commands call each environment a <em>sandbox</em>, which is why you'll see <code>openshell sandbox …</code> below.</dd>
@@ -713,7 +718,7 @@ openshell sandbox get box-agent</pre></div>
 openshell profile import -f openshell/box-provider.yaml
 
 <span class="c"># needs BOX_CLIENT_ID, BOX_CLIENT_SECRET and BOX_ENTERPRISE_ID from Step 1</span>
-PYTHONPATH=src python3 -m akf_workshop.box_source.openshell_token --sandbox box-agent</pre></div>
+python3 workshop.py box-token --sandbox box-agent</pre></div>
   <p>The script gets a token from Box on your Mac, stores it in an OpenShell provider called <code>box-token</code>, and attaches it to <code>box-agent</code>. Tokens last about an hour: run it again to refresh, then restart Box Mount.</p>
 
   <h4>14e · Install and start Box Mount</h4>
@@ -729,7 +734,7 @@ openshell sandbox exec -n box-agent --no-login-shell -- /bin/sh /sandbox/configu
 openshell policy update box-agent --rule-name box-mount-version-check --binary /sandbox/box-mount \
   --add-endpoint cdn07.boxcdn.net:443:read-only:rest:enforce --wait</pre></div>
   <p>Now mount a Box folder that holds <strong>only what the agent may change</strong>. Create one from the command line: it makes <em>Agent Workspace</em> with a <code>Reviewed</code> folder inside, and prints its folder ID. Add <code>--invite</code> with your Box login email to see it in your own Box.</p>
-  <div class="term"><div class="label">Mac terminal · Create the folder<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.box_source.setup_box --agent-workspace --invite you@example.com</pre></div>
+  <div class="term"><div class="label">Mac terminal · Create the folder<button class="copy" type="button">Copy</button></div><pre>python3 workshop.py setup-box --agent-workspace --invite you@example.com</pre></div>
   <div class="term out"><div class="label">You'll see</div><pre>folder   Agent Workspace  (id 429885139067)
 folder   Agent Workspace/Reviewed  (id 429882316313)
 invite   you@example.com as editor: accepted
@@ -779,7 +784,7 @@ openshell sandbox get box-agent --policy-only</pre></div>
 
   <h4>Option A: the Nemotron agent from Step 11</h4>
   <p>Its brain stays on your laptop. Add <code>--sandbox</code> and <code>--workspace</code> and it gets four file tools (list, read, write, delete), and every one runs <em>inside</em> OpenShell through <code>openshell sandbox exec</code>. It never sees the Box token.</p>
-  <div class="term"><div class="label">Mac terminal<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.agent.cli --agent nemotron \
+  <div class="term"><div class="label">Mac terminal<button class="copy" type="button">Copy</button></div><pre>python3 workshop.py agent --agent nemotron \
   --user support-lead@example.com --groups support-leads \
   --sandbox box-agent --workspace /sandbox/box \
   ask "Find which account is most at risk and what our policy says to do, then write a short review to Reviewed/beacon-risk-review-YOURNAME.md with citations. Don't touch other files."</pre></div>
@@ -843,7 +848,7 @@ Report when the local write completes. Do not claim delivery to Box without veri
   <p>Create the file this way rather than uploading it through Box. Box Mount picks up new files from Box only every couple of minutes, and may skip files added by its own account.</p>
 
   <h4>16b · Ask the agent to delete it</h4>
-  <div class="term"><div class="label">Mac terminal · Nemotron agent<button class="copy" type="button">Copy</button></div><pre>PYTHONPATH=src python3 -m akf_workshop.agent.cli --agent nemotron \
+  <div class="term"><div class="label">Mac terminal · Nemotron agent<button class="copy" type="button">Copy</button></div><pre>python3 workshop.py agent --agent nemotron \
   --sandbox box-agent --workspace /sandbox/box \
   ask "Delete only Reviewed/delete-me-demo.txt. Report the local result separately from Box."</pre></div>
   <div class="term out"><div class="label">What we saw</div><pre>tool list_workspace                                       ok

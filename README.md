@@ -2,7 +2,18 @@
 
 > **For the cleaner, step-by-step view, open [`docs/workshop-walkthrough.html`](docs/workshop-walkthrough.html) in your browser.**
 > It has the same steps as this README, with copy buttons on every command and a progress tracker.
-> On a Mac: `open docs/workshop-walkthrough.html`. Or download the repo and double-click the file.
+> On a Mac: `open docs/workshop-walkthrough.html`. On Windows: `start docs\workshop-walkthrough.html`. Or double-click the file.
+>
+> Works on **Mac and Windows** (Steps 0 to 12). Steps 13 to 16 need a Mac with Apple silicon, or Linux. Every command runs through `workshop.py`; on Windows, type `python` where it says `python3`.
+
+
+Build an agent that answers questions from Box content, cites its sources, and only uses files the person asking is allowed to see. You run one stage at a time and see exactly what each one does.
+
+Box files → Parse → Chunk → Embed → Search → Rerank → Answer → Agent
+
+---
+
+<!-- steps:start -->
 
 Build an agent that answers questions from Box content, cites its sources, and only uses files the person asking is allowed to see. You run one stage at a time and see exactly what each one does.
 
@@ -14,13 +25,22 @@ Box files → Parse → Chunk → Embed → Search → Rerank → Answer → Age
 
 ## Step 0: Before you start
 
-You need Python 3.10 or newer and a copy of the workshop repo. No GPU, and nothing to install for the core steps. Run every command from the repo folder.
+Steps 0 to 12 run on **Mac or Windows**. Steps 13 to 16 (agent security) need a Mac with Apple silicon, or Linux; on Windows, follow them as a demo. No GPU needed.
+
+|  | Mac | Windows |
+|---|---|---|
+| Terminal | Terminal | PowerShell |
+| Python 3.9 or newer | comes with Apple's Command Line Tools (`xcode-select --install`) | install from [python.org](https://www.python.org/downloads/), ticking *Add python.exe to PATH* |
+| Run a command | `python3 workshop.py …` | `python workshop.py …` |
+| Set a setting | `export NAME="value"` | `$env:NAME="value"` |
+
+Commands on this page are written for Mac. **On Windows, type `python` where it says `python3`**; where the two differ in any other way, both versions are shown. Run every command from the repo folder.
 
 *Run:*
 
 ```bash
-cd boxworks-workshop
-PYTHONPATH=src python3 -m unittest discover -s tests
+cd BoxWorks          # the folder you downloaded
+python3 workshop.py test
 ```
 
 The last line should say `OK`.
@@ -35,11 +55,18 @@ Several steps compare a local stand-in with the real NVIDIA model. To use the re
 
 Then set it in the same terminal you run the commands in. Without it, everything still runs offline.
 
-*Run:*
+*Mac terminal:*
 
 ```bash
 export NVIDIA_API_KEY="nvapi-..."   # your key from build.nvidia.com
 export NVIDIA_USE_REMOTE=1
+```
+
+*Windows PowerShell:*
+
+```bash
+$env:NVIDIA_API_KEY="nvapi-..."   # your key from build.nvidia.com
+$env:NVIDIA_USE_REMOTE="1"
 ```
 
 > Keep keys in your terminal only. Don't paste them into chat, documents or code. Every command prints `mode: REMOTE` or `mode: OFFLINE` so you always know which models ran.
@@ -55,7 +82,7 @@ export NVIDIA_USE_REMOTE=1
 
 Your workshop host gives you these values, or you create your own Box Platform app (see the README's Setup). Set them in your terminal:
 
-*Run:*
+*Mac terminal:*
 
 ```bash
 export BOX_CLIENT_ID="..."
@@ -63,12 +90,20 @@ export BOX_CLIENT_SECRET="..."
 export BOX_ENTERPRISE_ID="..."
 ```
 
+*Windows PowerShell:*
+
+```bash
+$env:BOX_CLIENT_ID="..."
+$env:BOX_CLIENT_SECRET="..."
+$env:BOX_ENTERPRISE_ID="..."
+```
+
 **Using your own Box?** Create the workshop folder once. It uploads five sample files and sets up two Box groups. Skip this if your host already gave you a folder ID.
 
 *Run once:*
 
 ```bash
-PYTHONPATH=src python3 -m akf_workshop.box_source.setup_box
+python3 workshop.py setup-box
 ```
 
 *What it creates:*
@@ -87,13 +122,19 @@ Done. Use this folder:
 
 Point the workshop at the folder. From now on, every step reads from Box.
 
-*Run:*
+*Mac terminal:*
 
 ```bash
 export BOX_FOLDER_ID=429759160477   # or the ID printed for your folder
 ```
 
-> To go back to the local sample files at any point, run `unset BOX_FOLDER_ID`. Every step works either way.
+*Windows PowerShell:*
+
+```bash
+$env:BOX_FOLDER_ID="429759160477"   # or the ID printed for your folder
+```
+
+> To go back to the local sample files at any point, run `unset BOX_FOLDER_ID` (Windows: `Remove-Item Env:BOX_FOLDER_ID`). Every step works either way.
 
 ---
 
@@ -110,7 +151,7 @@ export BOX_FOLDER_ID=429759160477   # or the ID printed for your folder
 *Run:*
 
 ```bash
-PYTHONPATH=src python3 -m akf_workshop.walkthrough files
+python3 workshop.py walkthrough files
 ```
 
 *You'll see (shortened):*
@@ -146,7 +187,7 @@ Code: `src/akf_workshop/box_source/box_api.py`
 *Run:*
 
 ```bash
-PYTHONPATH=src python3 -m akf_workshop.walkthrough parse
+python3 workshop.py walkthrough parse
 ```
 
 The 5 files become 11 sections in total. Markdown splits at each `#` heading, and each CSV becomes one summary:
@@ -167,8 +208,8 @@ Needs the API key from Step 0 and two small libraries:
 *Run:*
 
 ```bash
-pip install "pypdfium2>=5" "Pillow>=10"
-PYTHONPATH=src python3 -m akf_workshop.walkthrough parse --file tests/fixtures/response_targets.png
+python3 -m pip install --user "pypdfium2>=5" "Pillow>=10"
+python3 workshop.py walkthrough parse --file tests/fixtures/response_targets.png
 ```
 
 *You'll see:*
@@ -190,8 +231,8 @@ See where the model found each part. `--show` draws its boxes onto a *copy* of t
 *Run:*
 
 ```bash
-PYTHONPATH=src python3 -m akf_workshop.walkthrough parse --file tests/fixtures/response_targets.png --show boxes.png
-open boxes.png
+python3 workshop.py walkthrough parse --file tests/fixtures/response_targets.png --show boxes.png
+open boxes.png        # Windows: start boxes.png
 ```
 
 - The table comes back as a real table, every row and column in place, not a jumble of words.
@@ -209,7 +250,7 @@ open boxes.png
 *Run:*
 
 ```bash
-PYTHONPATH=src python3 -m akf_workshop.walkthrough chunk
+python3 workshop.py walkthrough chunk
 ```
 
 *You'll see (shortened):*
@@ -249,7 +290,7 @@ Each line is one chunk:
 *Run:*
 
 ```bash
-PYTHONPATH=src python3 -m akf_workshop.walkthrough embed
+python3 workshop.py walkthrough embed
 ```
 
 It compares three sentences. 1 and 2 mean the same thing in different words, and 3 is unrelated:
@@ -280,8 +321,8 @@ With no question given, the default is *"How should the workshop evaluate retrie
 *Run:*
 
 ```bash
-PYTHONPATH=src python3 -m akf_workshop.walkthrough search
-PYTHONPATH=src python3 -m akf_workshop.walkthrough search "When should enterprise incidents be escalated?"
+python3 workshop.py walkthrough search
+python3 workshop.py walkthrough search "When should enterprise incidents be escalated?"
 ```
 
 *Offline (word hashing):*
@@ -331,7 +372,7 @@ permission filter: 7 of 11 chunks are visible to you; the rest are never scored.
 *Run:*
 
 ```bash
-PYTHONPATH=src python3 -m akf_workshop.walkthrough rerank
+python3 workshop.py walkthrough rerank
 ```
 
 *You'll see (online):*
@@ -359,8 +400,8 @@ AFTER (reranked, top 4 kept):
 *Run:*
 
 ```bash
-PYTHONPATH=src python3 -m akf_workshop.walkthrough answer "What must every answer include?"
-PYTHONPATH=src python3 -m akf_workshop.walkthrough answer "When should enterprise incidents be escalated?"
+python3 workshop.py walkthrough answer "What must every answer include?"
+python3 workshop.py walkthrough answer "When should enterprise incidents be escalated?"
 ```
 
 |  | What must every answer include? | When should incidents be escalated? |
@@ -382,7 +423,7 @@ Ask the escalation question again, this time as a member of the Box group `suppo
 *Run:*
 
 ```bash
-PYTHONPATH=src python3 -m akf_workshop.walkthrough --user support-lead@example.com --groups support-leads answer "When should enterprise incidents be escalated?"
+python3 workshop.py walkthrough --user support-lead@example.com --groups support-leads answer "When should enterprise incidents be escalated?"
 ```
 
 *You'll see:*
@@ -434,7 +475,7 @@ From `data/accounts.csv` (everyone) and `support-leads/support_cases.csv` (suppo
 *Run:*
 
 ```bash
-PYTHONPATH=src python3 -m akf_workshop.agent.cli --user support-lead@example.com --groups support-leads ask "Predict support risk and cite the policy."
+python3 workshop.py agent --user support-lead@example.com --groups support-leads ask "Predict support risk and cite the policy."
 ```
 
 |  | What happens |
@@ -472,7 +513,7 @@ The offline formula adds points for open cases, priority cases, case age, enterp
 *Run:*
 
 ```bash
-PYTHONPATH=src python3 -m akf_workshop.agent.cli ask "Predict support risk and cite the policy."
+python3 workshop.py agent ask "Predict support risk and cite the policy."
 ```
 
 *You'll see:*
@@ -502,7 +543,7 @@ Same question, but you can't read `support_cases.csv` in Box, so no prediction i
 *Run:*
 
 ```bash
-PYTHONPATH=src python3 -m akf_workshop.agent.cli --agent nemotron --user support-lead@example.com --groups support-leads ask "Which account is most at risk, and what does our policy say we should do?"
+python3 workshop.py agent --agent nemotron --user support-lead@example.com --groups support-leads ask "Which account is most at risk, and what does our policy say we should do?"
 ```
 
 *You'll see (wording varies):*
@@ -537,8 +578,7 @@ So far you've judged answers by eye. An **eval** checks many questions at once, 
 *Run:*
 
 ```bash
-PYTHONPATH=src python3 -m akf_workshop.evals.run_eval --summary \
-  --golden src/akf_workshop/evals/golden_questions_search.json
+python3 workshop.py eval --summary --golden src/akf_workshop/evals/golden_questions_search.json
 ```
 
 *You'll see (shortened):*
@@ -560,8 +600,7 @@ Raise the refusal threshold from −3.1 to −2.0. The agent now needs a stronge
 *Run:*
 
 ```bash
-AKF_RERANK_MIN_LOGIT=-2.0 PYTHONPATH=src python3 -m akf_workshop.evals.run_eval --summary \
-  --golden src/akf_workshop/evals/golden_questions_search.json
+python3 workshop.py --env AKF_RERANK_MIN_LOGIT=-2.0 eval --summary --golden src/akf_workshop/evals/golden_questions_search.json
 ```
 
 *You'll see:*
@@ -582,8 +621,7 @@ The right file was found every time (recall 1.00), but the agent refused anyway.
 *Run:*
 
 ```bash
-AKF_RERANK_MIN_LOGIT=-4.0 PYTHONPATH=src python3 -m akf_workshop.evals.run_eval --summary \
-  --golden src/akf_workshop/evals/golden_questions_search.json
+python3 workshop.py --env AKF_RERANK_MIN_LOGIT=-4.0 eval --summary --golden src/akf_workshop/evals/golden_questions_search.json
 ```
 
 *You'll see:*
@@ -598,22 +636,13 @@ Now it answers a question no document covers, from unrelated text. Too loose, an
 
 ### Try 3: add your own questions
 
-Write a few questions with the outcome you expect. Copy this whole block; it creates `my_questions.json` in the repo folder:
+Write questions with the outcome you expect. The first command creates `my_questions.json` in the repo folder with two example questions; the second runs the eval on it:
 
 *Run:*
 
 ```bash
-cat > my_questions.json <<'JSON'
-[
-  {"question": "What is the response target for a P3 case?",
-   "user": "support-lead@example.com", "groups": ["support-leads"],
-   "expected_files": ["enterprise-support-policy.md"], "expect_status": "ok"},
-  {"question": "What is our refund policy for cancelled subscriptions?",
-   "user": "dev@example.com", "groups": ["workshop-attendees"],
-   "expected_files": [], "expect_status": "insufficient_context"}
-]
-JSON
-PYTHONPATH=src python3 -m akf_workshop.evals.run_eval --summary --golden my_questions.json
+python3 workshop.py my-questions
+python3 workshop.py eval --summary --golden my_questions.json
 ```
 
 *You'll see:*
@@ -634,6 +663,8 @@ Now open `my_questions.json` in your editor and change it: reword a question, sw
 ## Step 13: Why run agents in a secure runtime
 
 Until now the agent only *read*. Real agents also act: they write reports, edit files and delete things. An agent that can delete can delete the wrong thing, because it misread a request, followed a malicious instruction hidden in a document, or simply made a mistake. These steps run the agent's actions inside **OpenShell**, a secure runtime with rules the agent can't change.
+
+> **Mac (Apple silicon) or Linux only.** OpenShell's Windows support is still experimental, so on Windows, follow Steps 13 to 16 as a demo or pair with someone on a Mac.
 
 **Concepts**
 
@@ -739,7 +770,7 @@ openshell profile lint -f openshell/box-provider.yaml
 openshell profile import -f openshell/box-provider.yaml
 
 # needs BOX_CLIENT_ID, BOX_CLIENT_SECRET and BOX_ENTERPRISE_ID from Step 1
-PYTHONPATH=src python3 -m akf_workshop.box_source.openshell_token --sandbox box-agent
+python3 workshop.py box-token --sandbox box-agent
 ```
 
 The script gets a token from Box on your Mac, stores it in an OpenShell provider called `box-token`, and attaches it to `box-agent`. Tokens last about an hour: run it again to refresh, then restart Box Mount.
@@ -774,7 +805,7 @@ Now mount a Box folder that holds **only what the agent may change**. Create one
 *Mac terminal · Create the folder:*
 
 ```bash
-PYTHONPATH=src python3 -m akf_workshop.box_source.setup_box --agent-workspace --invite you@example.com
+python3 workshop.py setup-box --agent-workspace --invite you@example.com
 ```
 
 *You'll see:*
@@ -853,7 +884,7 @@ Its brain stays on your laptop. Add `--sandbox` and `--workspace` and it gets fo
 *Mac terminal:*
 
 ```bash
-PYTHONPATH=src python3 -m akf_workshop.agent.cli --agent nemotron \
+python3 workshop.py agent --agent nemotron \
   --user support-lead@example.com --groups support-leads \
   --sandbox box-agent --workspace /sandbox/box \
   ask "Find which account is most at risk and what our policy says to do, then write a short review to Reviewed/beacon-risk-review-YOURNAME.md with citations. Don't touch other files."
@@ -973,7 +1004,7 @@ Create the file this way rather than uploading it through Box. Box Mount picks u
 *Mac terminal · Nemotron agent:*
 
 ```bash
-PYTHONPATH=src python3 -m akf_workshop.agent.cli --agent nemotron \
+python3 workshop.py agent --agent nemotron \
   --sandbox box-agent --workspace /sandbox/box \
   ask "Delete only Reviewed/delete-me-demo.txt. Report the local result separately from Box."
 ```
@@ -1042,6 +1073,8 @@ Method: DELETE
 
 > **What this shows, precisely.** The agent was allowed to create and sync its report and to delete its local copy, but not to delete anything in Box. The model never held the Box token and couldn't change the rule. It doesn't show per-person permissions inside the synced folder, or that a downloaded copy keeps Box's governance; those need their own design.
 
+<!-- steps:end -->
+
 ---
 
 # Reference
@@ -1050,7 +1083,9 @@ Method: DELETE
 
 | Path | What it holds |
 | --- | --- |
+| `workshop.py` | Runs every command, the same way on Mac and Windows: `python3 workshop.py help` lists them |
 | `docs/workshop-walkthrough.html` | This guide, as a page with copy buttons and progress tracking |
+| `tools/build_readme.py` | Rebuilds this README's steps from the page after you edit it |
 | `src/akf_workshop/walkthrough.py` | The stage-by-stage commands (Steps 2 to 8) |
 | `src/akf_workshop/box_source/adapter.py` | The local Box placeholder (default) |
 | `src/akf_workshop/box_source/box_api.py` | The real Box adapter, used when `BOX_FOLDER_ID` is set |
@@ -1063,7 +1098,7 @@ Method: DELETE
 | `src/akf_workshop/agent/` | The rule-based agent, the CLI and the trace |
 | `src/akf_workshop/agent/nemotron_agent.py` | The Nemotron 3.5 Super agent with tools (Steps 11, 15 and 16) |
 | `src/akf_workshop/agent/workspace.py` | The agent's file tools, run inside OpenShell (Steps 15 and 16) |
-| `src/akf_workshop/evals/` | Golden questions and the metrics |
+| `src/akf_workshop/evals/` | Golden questions, the metrics, and `my_questions.example.json` for Step 12 |
 | `src/akf_workshop/nvidia_clients.py` | Every call to a hosted NVIDIA endpoint |
 | `openshell/` | Gateway settings, the Box provider profile and the Box Mount config script (Step 14) |
 | `docs/nvidia-endpoints.md` | Endpoint details and every setting |
@@ -1085,8 +1120,9 @@ Box Mount isn't in this repo. Get the build from your workshop host and put its 
 
 ## Troubleshooting
 
-- **`No module named 'akf_workshop'`**: you're not in the repo folder, or `PYTHONPATH=src` is missing.
-- **`mode: OFFLINE` when you expected remote**: both `NVIDIA_API_KEY` and `NVIDIA_USE_REMOTE=1` must be set in the *same terminal*.
+- **`can't open file 'workshop.py'`**: you're not in the repo folder. `cd` into it first.
+- **`python3` not found on Windows**: type `python` instead. If that isn't found either, reinstall Python from python.org and tick *Add python.exe to PATH*.
+- **`mode: OFFLINE` when you expected remote**: both `NVIDIA_API_KEY` and `NVIDIA_USE_REMOTE` must be set in the *same terminal* (Mac: `export`, Windows: `$env:`).
 - **A PDF or image shows as a notice**: remote mode is off, or `pypdfium2` and `Pillow` aren't installed.
 - **Results differ slightly from this guide in remote mode**: expected. Hosted models can change scores between runs.
 - **`Box credentials missing`**: `BOX_FOLDER_ID` is set but `BOX_CLIENT_ID`, `BOX_CLIENT_SECRET` or `BOX_ENTERPRISE_ID` isn't. Set all of them, or unset `BOX_FOLDER_ID` to use local files.

@@ -1,0 +1,8 @@
+[
+  {"question": "What is the response target for a P3 case?",
+   "user": "support-lead@example.com", "groups": ["support-leads"],
+   "expected_files": ["enterprise-support-policy.md"], "expect_status": "ok"},
+  {"question": "What is our refund policy for cancelled subscriptions?",
+   "user": "dev@example.com", "groups": ["workshop-attendees"],
+   "expected_files": [], "expect_status": "insufficient_context"}
+]
